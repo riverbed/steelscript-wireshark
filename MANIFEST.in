@@ -1,2 +1,2 @@
 include setup.py README.rst MANIFEST.in LICENSE
-global-exclude *~
+include gitpy_versioning/*
