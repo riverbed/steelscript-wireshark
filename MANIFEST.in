@@ -1,2 +1,2 @@
-include setup.py README.rst MANIFEST.in LICENSE
+include README.rst MANIFEST.in LICENSE
 include gitpy_versioning/*
