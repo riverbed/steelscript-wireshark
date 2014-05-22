@@ -1,2 +1,3 @@
-include README.rst MANIFEST.in LICENSE
+include RELEASE-VERSION
+include LICENSE
 include gitpy_versioning/*
