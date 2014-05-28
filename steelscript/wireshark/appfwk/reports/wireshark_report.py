@@ -35,7 +35,7 @@ from steelscript.wireshark.appfwk.datasources.wireshark_source \
 # PCAP analysis
 #
 
-report = Report(title="PCAP Analysis", position=8)
+report = Report(title="PCAP Analysis", position=12)
 report.save()
 
 report.add_section()
