@@ -19,7 +19,7 @@ import pandas
 from django.forms.widgets import FileInput
 
 from steelscript.appfwk.apps.datasource.models \
-    import DatasourceTable, TableField, Column
+    import DatasourceTable, TableField, Column, TableQueryBase
 from steelscript.appfwk.apps.datasource.forms \
     import FileSelectField, fields_add_resolution
 
@@ -68,7 +68,9 @@ class WiresharkTable(DatasourceTable):
         proxy = True
 
     # When a custom column is used, it must be linked
-    _column_class = WiresharkColumn
+    _column_class = 'WiresharkColumn'
+    _query_class = 'WiresharkQuery'
+
     TABLE_OPTIONS = { }
     FIELD_OPTIONS = { 'resolution': '1m',
                       'resolutions': ('1s', '1m', '15min', '1h') }
@@ -103,11 +105,7 @@ def totimeint(s):
     return int(a) * 1000000000 + int(b)
 
 
-class TableQuery:
-    # Used by Table to actually run a query
-    def __init__(self, table, job):
-        self.table = table
-        self.job = job
+class WiresharkQuery(TableQueryBase):
 
     def run(self):
         table = self.table
