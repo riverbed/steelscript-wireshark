@@ -1,14 +1,19 @@
-wireshark
-=========
+Riverbed SteelScript for SteelCentral Wireshark
+===============================================
 
-The directory structure is as follows:
+This package provides device specific bindings for interacting
+with Riverbed SteelCentral Wireshark devices as part of the Riverbed
+SteelScript for Python.
 
-* ./README.rst -- this file
-* ./setup.py -- package installation parameters
-* ./steelscript -- package source files files
-* ./steelscript/wireshark/core/ -- core source files
-* ./steelscript/wireshark/appfwk/plugin.py -- plugin information
-* ./steelscript/wireshark/appfwk/datasources/ - directory
-* ./steelscript/wireshark/appfwk/devices/ - directory of devices
-* ./steelscript/wireshark/appfwk/reports/ - directory of reports
-* ./steelscript/wireshark/appfwk/libs/ - helper functions
+For a complete guide to installation, see:
+
+  `https://support.riverbed.com/apis/steelscript/index.html <https://support.riverbed.com/apis/steelscript/index.html>`_
+
+License
+=======
+
+Copyright (c) 2014 Riverbed Technology, Inc.
+
+SteelScript-Wireshark is licensed under the terms and conditions of the MIT
+License accompanying the software ("License").  SteelScript-Wireshark is
+distributed "AS IS" as set forth in the License.
