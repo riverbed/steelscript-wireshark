@@ -25,10 +25,20 @@ setup_args = {
     # Update the following as needed
     'author':              'Riverbed Technology',
     'author_email':        'eng-github@riverbed.com',
-    'url':                 '',
+    'url':                 'http://pythonhosted.org/steelscript',
     'license':             'MIT',
     'description':         'Extract metrics from pcap files',
-    'long_description':    __doc__,
+
+    'long_description': """SteelScript for Wireshark
+=========================
+
+SteelScript is a collection of libraries and scripts in Python and JavaScript for
+interacting with Riverbed Technology devices.
+
+For a complete guide to installation, see:
+
+http://pythonhosted.org/steelscript/
+    """,
 
     'packages': find_packages(exclude=('gitpy_versioning',)),
     'zip_safe': False,
