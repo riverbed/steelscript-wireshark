@@ -9,7 +9,6 @@ A data source for querying data from pcap files via tshark
 """
 
 import logging
-import threading
 import subprocess
 import shlex
 import os
@@ -17,33 +16,34 @@ import os
 import pandas
 
 from django.forms.widgets import FileInput
+from django import forms
+
+from steelscript.wireshark.core.pcap import PcapFile
 
 from steelscript.appfwk.apps.datasource.models \
     import DatasourceTable, TableField, Column, TableQueryBase
 from steelscript.appfwk.apps.datasource.forms \
-    import FileSelectField, fields_add_resolution
+    import FileSelectField, fields_add_resolution, fields_add_time_selection
 
 import local_settings
 
 logger = logging.getLogger(__name__)
-lock = threading.Lock()
-
 
 class WiresharkColumn(Column):
     class Meta:
         proxy = True
 
     COLUMN_OPTIONS = {'field': None,
-                      'fieldtype': 'string',  # float, int, time
                       'operation': 'sum'}
     #_required = ['field']
 
 
-def fields_add_pcapfile(obj, keyword='pcapfile', initial=None):
-    field = TableField(keyword='pcapfile',
+def fields_add_pcapfile(obj, keyword='pcapfilename', initial=None):
+    field = TableField(keyword='pcapfilename',
                        label='PCAP File',
-                       field_cls=FileSelectField,
-                       field_kwargs={'widget': FileInput})
+                       #field_cls=FileSelectField,
+                       #field_kwargs={'widget': FileInput}
+                       )
     field.save()
     obj.fields.add(field)
 
@@ -79,6 +79,13 @@ class WiresharkTable(DatasourceTable):
         #
         # Add criteria fields that are required by this table
         #
+        TableField.create(keyword='entire_pcap', obj=self,
+                          field_cls=forms.BooleanField,
+                          label='Entire PCAP',
+                          initial=False,
+                          required=False)
+
+        fields_add_time_selection(self, show_start=True, show_end=True, show_duration=False)
         fields_add_resolution(obj=self,
                               initial=field_options['resolution'],
                               resolutions=field_options['resolutions'])
@@ -86,55 +93,31 @@ class WiresharkTable(DatasourceTable):
         fields_add_filterexpr(obj=self)
 
 
-def tofloat(x):
-    try:
-        return float(x)
-    except:
-        return 0
-
-
-def toint(x):
-    try:
-        return int(x)
-    except:
-        return 0
-
-
-def totimeint(s):
-    (a, b) = s.split(".")
-    return int(a) * 1000000000 + int(b)
-
-
 class WiresharkQuery(TableQueryBase):
 
     def run(self):
+        criteria = self.job.criteria
         table = self.table
         columns = table.get_columns(synthetic=False)
 
-        pcapfile = self.job.criteria.pcapfile
+        pcapfilename = criteria.pcapfilename
 
-        if not pcapfile:
+        if not pcapfilename:
             raise ValueError("No pcap file specified")
-        elif not os.path.exists(pcapfile):
-            raise ValueError("No such file: %s" % pcapfile)
-
+        elif not os.path.exists(pcapfilename):
+            raise ValueError("No such file: %s" % pcapfilename)
 
         if not hasattr(local_settings, 'TSHARK_PATH'):
             raise ValueError('Please set local_settings.TSHARK_PATH '
                              'to the proper path to the tshark executable')
 
-        command = ('{tshark} -r {pcap} -T fields -E occurrence=f -E separator=,'
-                   .format(tshark=local_settings.TSHARK_PATH,
-                           pcap=pcapfile))
-        filterexpr = self.job.criteria.wireshark_filterexpr
-        if filterexpr not in ('', None):
-            command = command + (" -R '%s'" % filterexpr)
 
-        keys = []
+        pcapfile = PcapFile(pcapfilename)
+
+        fieldnames = []
         basecolnames = []  # list of colummns
         # dict by field name of the base (or first) column to use this field
         fields = {}
-        ops = {}
         for tc in columns:
             tc_options = tc.options
             if tc_options.field in fields.keys():
@@ -142,29 +125,27 @@ class WiresharkQuery(TableQueryBase):
                 # is useful when aggregating and choosing a different operation
                 # like "min", or "max".  Will populate these columns later
                 continue
-            command = command + (" -e %s" % tc_options.field)
             fields[tc_options.field] = tc.name
+            fieldnames.append(tc_options.field)
             basecolnames.append(tc.name)
-            if tc.iskey:
-                keys.append(tc.name)
-            else:
-                ops[tc.name] = tc_options.operation
 
-        msg = "tshark command: %s" % command
-        #print msg
-        logger.debug(msg)
-        proc = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE)
+        if criteria.entire_pcap:
+            starttime = None
+            endtime = None
+        else:
+            starttime = criteria.starttime
+            endtime = criteria.endtime
 
-        data = []
-        while proc.poll() is None:
-            line = proc.stdout.readline().rstrip()
-            if not line:
-                continue
-            cols = line.split(',')
-            if len(cols) != len(basecolnames):
-                logger.error("Could not parse line: %s" % line)
-                continue
-            data.append(cols)
+        data = pcapfile.query(
+            fieldnames,
+            starttime=starttime,
+            endtime=endtime,
+            filterexpr = criteria.wireshark_filterexpr,
+            use_tshark_fields=True)
+
+        if len(data) == 0:
+            self.data = None
+            return True
 
         df = pandas.DataFrame(data, columns=basecolnames)
         # At this point we have a dataframe with the one column for each
@@ -180,14 +161,49 @@ class WiresharkQuery(TableQueryBase):
             if tc.name not in basecolnames:
                 continue
             tc_options = tc.options
-            if tc_options.fieldtype == "float":
-                df[tc.name] = df[tc.name].map(tofloat)
-            elif tc_options.fieldtype == "int":
-                df[tc.name] = df[tc.name].map(toint)
-            elif tc.datatype == "time":
-                df[tc.name] = pandas.DatetimeIndex(df[tc.name].map(totimeint))
+            if tc.datatype == "time":
+                df[tc.name] = pandas.DatetimeIndex(df[tc.name])
 
         colnames = [col.name for col in columns]
         self.data = df.ix[:,colnames].values.tolist()
 
+        return True
+
+
+class WiresharkInfoTable(DatasourceTable):
+
+    class Meta:
+        proxy = True
+
+    _query_class = 'WiresharkInfoQuery'
+
+    TABLE_OPTIONS = { }
+    FIELD_OPTIONS = { }
+
+    def post_process_table(self, field_options):
+        fields_add_pcapfile(obj=self)
+
+
+class WiresharkInfoQuery(TableQueryBase):
+
+    def run(self):
+        criteria = self.job.criteria
+
+        pcapfilename = criteria.pcapfilename
+
+        if not pcapfilename:
+            raise ValueError("No pcap file specified")
+        elif not os.path.exists(pcapfilename):
+            raise ValueError("No such file: %s" % pcapfilename)
+
+        if not hasattr(local_settings, 'TSHARK_PATH'):
+            raise ValueError('Please set local_settings.TSHARK_PATH '
+                             'to the proper path to the tshark executable')
+
+
+        pcapfile = PcapFile(pcapfilename)
+        pcapfile.info()
+        self.data = [['Start time', str(pcapfile.starttime)],
+                     ['End time', str(pcapfile.endtime)],
+                     ['Number of packets', pcapfile.numpackets]]
         return True

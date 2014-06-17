@@ -28,28 +28,39 @@ from steelscript.appfwk.apps.datasource.models import Column
 import steelscript.appfwk.apps.report.modules.yui3 as yui3
 
 from steelscript.wireshark.appfwk.datasources.wireshark_source \
-    import WiresharkColumn, WiresharkTable
+    import WiresharkColumn, WiresharkTable, WiresharkInfoTable
 
 ######################################################################
 #
 # PCAP analysis
 #
 
-report = Report(title="PCAP Analysis", position=12)
+report = Report(title="PCAP Analysis", position=1)
 report.save()
 
 report.add_section()
 
 #
-# Table: Process Internal.pcap
+# Table: Pcap info
+#
+
+table = WiresharkInfoTable.create('pcap-info')
+
+table.add_column('Attribute', datatype='string', iskey=True)
+table.add_column('Value', datatype='string')
+
+report.add_widget(yui3.TableWidget, table, 'PCAP Info', width=12, height=200)
+
+#
+# Table: Process Pcap files
 #
 
 table = WiresharkTable.create('pcap', resample=True,
-                              resolution='1s', resolutions=['1s','1m'])
+                              resolution='1m', resolutions=['1s','1m'])
 
 table.add_column('pkttime', datatype=Column.DATATYPE_TIME, iskey=True,
-                 field='frame.time_epoch', fieldtype='float')
-table.add_column('iplen', field='ip.len', fieldtype='int')
+                 field='frame.time_epoch')
+table.add_column('iplen', field='ip.len')
 
 table.add_column('iplen-bits', synthetic=True,
                  compute_expression='8*{iplen}',
