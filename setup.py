@@ -15,6 +15,7 @@ from gitpy_versioning import get_version
 
 install_requires = (
     'steelscript.appfwk',
+    'tzlocal',
 )
 
 setup_args = {
