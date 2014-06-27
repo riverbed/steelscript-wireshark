@@ -17,6 +17,7 @@ import pandas
 
 from django.forms.widgets import FileInput
 from django import forms
+from django.conf import settings
 
 from steelscript.wireshark.core.pcap import PcapFile
 
@@ -25,9 +26,8 @@ from steelscript.appfwk.apps.datasource.models \
 from steelscript.appfwk.apps.datasource.forms \
     import FileSelectField, fields_add_resolution, fields_add_time_selection
 
-import local_settings
-
 logger = logging.getLogger(__name__)
+
 
 class WiresharkColumn(Column):
     class Meta:
@@ -61,6 +61,7 @@ def fields_add_filterexpr(obj,
               required = False))
     field.save()
     obj.fields.add(field)
+
 
 class WiresharkTable(DatasourceTable):
 
@@ -107,7 +108,7 @@ class WiresharkQuery(TableQueryBase):
         elif not os.path.exists(pcapfilename):
             raise ValueError("No such file: %s" % pcapfilename)
 
-        if not hasattr(local_settings, 'TSHARK_PATH'):
+        if not hasattr(settings, 'TSHARK_PATH'):
             raise ValueError('Please set local_settings.TSHARK_PATH '
                              'to the proper path to the tshark executable')
 
@@ -196,7 +197,7 @@ class WiresharkInfoQuery(TableQueryBase):
         elif not os.path.exists(pcapfilename):
             raise ValueError("No such file: %s" % pcapfilename)
 
-        if not hasattr(local_settings, 'TSHARK_PATH'):
+        if not hasattr(settings, 'TSHARK_PATH'):
             raise ValueError('Please set local_settings.TSHARK_PATH '
                              'to the proper path to the tshark executable')
 
