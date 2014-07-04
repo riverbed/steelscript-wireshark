@@ -38,8 +38,9 @@ class PcapFile(object):
     def info(self):
         if self._info is None:
 
-            capinfos = subprocess.check_output(['capinfos', '-A', '-m',
-                                                '-T', self.filename])
+            cmd = ['capinfos', '-A', '-m', '-T', self.filename]
+            logger.info('subprocess: %s' % ' '.join(cmd))
+            capinfos = subprocess.check_output(cmd)
             hdrs, vals = (capinfos.split('\n')[:2])
             self._info = dict(zip(hdrs.split(','), vals.split(',')))
 
@@ -88,7 +89,7 @@ class PcapFile(object):
         cmd.append(self.filename)
         cmd.append(filename)
 
-        logger.debug("Command: %s" % str(cmd))
+        logger.info('subprocess: %s' % ' '.join(cmd))
         o = subprocess.check_output(cmd)
 
         return PcapFile(filename)
@@ -136,14 +137,21 @@ class PcapFile(object):
         for n in fieldnames:
             if use_tshark_fields:
                 tf = TSharkFields.instance()
-                if n not in tf.fields:
+                if n in tf.protocols:
+                    # Allow protocols as a field, but convert to a string
+                    # rather than attempt to parse it
+                    fields.append(TSharkField(n, '', 'FT_STRING', n))
+
+                elif n in tf.fields:
+                    fields.append(tf.fields[n])
+
+                else:
                     raise InvalidField(n)
 
-                fields.append(tf.fields[n])
 
             cmd.extend(['-e', n])
 
-        logger.info("Starting tshark process: %s" % str(cmd))
+        logger.info('subprocess: %s' % ' '.join(cmd))
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
         data = []
@@ -204,7 +212,7 @@ class TSharkField(object):
 
         if re.match('FT_U?INT64.*', datatype):
             self.datatype = long
-        elif re.match('FT_(U?INT.*|BYTES|FRAMENUM)', datatype):
+        elif re.match('FT_(U?INT.*|FRAMENUM)', datatype):
             self.datatype = int
         elif re.match('FT_(FLOAT|DOUBLE|RELATIVE_TIME)', datatype):
             self.datatype = float
@@ -246,7 +254,7 @@ class TSharkFields(object):
         self.fields = None
         self.load()
 
-    def load(self, force=False, ignore_cache=False):
+    def load(self, force=False, ignore_cache=False, protocols=None):
         """Load"""
         if self.protocols and not force:
             return
@@ -261,6 +269,7 @@ class TSharkFields(object):
 
         cmd = ['tshark', '-G', 'fields']
 
+        logger.info('subprocess: %s' % ' '.join(cmd))
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
         data = []
@@ -273,9 +282,13 @@ class TSharkFields(object):
             fields = line.split('\t')
             if fields[0] == 'P':
                 (t, desc, name) = fields[:3]
+                if protocols is not None and name not in protocols:
+                    continue
                 self.protocols[name] = desc
             elif fields[0] == 'F':
                 (t, desc, name, datatype, protocol) = fields[:5]
+                if protocols is not None and protocol not in protocols:
+                    continue
                 self.fields[name] = TSharkField(name, desc, datatype, protocol)
 
         with open(self.CACHEFILE, 'wb', 2) as f:

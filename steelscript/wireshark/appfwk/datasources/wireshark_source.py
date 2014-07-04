@@ -9,8 +9,6 @@ A data source for querying data from pcap files via tshark
 """
 
 import logging
-import subprocess
-import shlex
 import os
 
 import pandas
@@ -38,12 +36,25 @@ class WiresharkColumn(Column):
     #_required = ['field']
 
 
-def fields_add_pcapfile(obj, keyword='pcapfilename', initial=None):
-    field = TableField(keyword='pcapfilename',
-                       label='PCAP File',
-                       #field_cls=FileSelectField,
-                       #field_kwargs={'widget': FileInput}
-                       )
+def fields_add_pcapfile(obj, keyword='pcapfilename',
+                        label='PCAP File', initial=None,
+                        astextfield=False):
+    """Add a PCAP file selection field.
+
+    :param bool astextfield: If True, use a text field instead of a
+        file selection field.  The text value is interpreted as
+        a file on the server.
+
+    """
+
+    kwargs = {}
+    if not astextfield:
+        kwargs['field_cls'] = FileSelectField
+        kwargs['field_kwargs'] = {'widget': FileInput}
+
+    field = TableField(keyword=keyword,
+                       label=label,
+                       **kwargs)
     field.save()
     obj.fields.add(field)
 
@@ -72,9 +83,10 @@ class WiresharkTable(DatasourceTable):
     _column_class = 'WiresharkColumn'
     _query_class = 'WiresharkQuery'
 
-    TABLE_OPTIONS = { }
-    FIELD_OPTIONS = { 'resolution': '1m',
-                      'resolutions': ('1s', '1m', '15min', '1h') }
+    TABLE_OPTIONS = {}
+    FIELD_OPTIONS = {'resolution': '1m',
+                     'resolutions': ('1s', '1m', '15min', '1h'),
+                     'pcapfile_astextfield': False}
 
     def post_process_table(self, field_options):
         #
@@ -83,14 +95,16 @@ class WiresharkTable(DatasourceTable):
         TableField.create(keyword='entire_pcap', obj=self,
                           field_cls=forms.BooleanField,
                           label='Entire PCAP',
-                          initial=False,
+                          initial=True,
                           required=False)
 
-        fields_add_time_selection(self, show_start=True, show_end=True, show_duration=False)
+        fields_add_time_selection(self, show_start=True, show_end=True,
+                                  show_duration=False)
         fields_add_resolution(obj=self,
                               initial=field_options['resolution'],
                               resolutions=field_options['resolutions'])
-        fields_add_pcapfile(obj=self)
+        fields_add_pcapfile(
+            obj=self, astextfield=field_options['pcapfile_astextfield'])
         fields_add_filterexpr(obj=self)
 
 
@@ -111,7 +125,6 @@ class WiresharkQuery(TableQueryBase):
         if not hasattr(settings, 'TSHARK_PATH'):
             raise ValueError('Please set local_settings.TSHARK_PATH '
                              'to the proper path to the tshark executable')
-
 
         pcapfile = PcapFile(pcapfilename)
 
