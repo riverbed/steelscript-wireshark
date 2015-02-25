@@ -33,7 +33,6 @@ class WiresharkColumn(Column):
 
     COLUMN_OPTIONS = {'field': None,
                       'operation': 'sum'}
-    #_required = ['field']
 
 
 def fields_add_pcapfile(obj, keyword='pcapfilename',
@@ -64,12 +63,12 @@ def fields_add_filterexpr(obj,
                           initial=None
                           ):
     field = (TableField
-             (keyword = keyword,
-              label = 'WireShark Filter Expression',
-              help_text = ('Traffic expression using WireShark Display '
-                           'Filter syntax'),
-              initial = initial,
-              required = False))
+             (keyword=keyword,
+              label='WireShark Filter Expression',
+              help_text=('Traffic expression using WireShark Display '
+                         'Filter syntax'),
+              initial=initial,
+              required=False))
     field.save()
     obj.fields.add(field)
 
@@ -154,7 +153,7 @@ class WiresharkQuery(TableQueryBase):
             fieldnames,
             starttime=starttime,
             endtime=endtime,
-            filterexpr = criteria.wireshark_filterexpr,
+            filterexpr=criteria.wireshark_filterexpr,
             use_tshark_fields=True)
 
         if len(data) == 0:
@@ -179,7 +178,7 @@ class WiresharkQuery(TableQueryBase):
                 df[tc.name] = pandas.DatetimeIndex(df[tc.name])
 
         colnames = [col.name for col in columns]
-        self.data = df.ix[:,colnames].values.tolist()
+        self.data = df.ix[:, colnames].values.tolist()
 
         return True
 
@@ -191,8 +190,8 @@ class WiresharkInfoTable(DatasourceTable):
 
     _query_class = 'WiresharkInfoQuery'
 
-    TABLE_OPTIONS = { }
-    FIELD_OPTIONS = { }
+    TABLE_OPTIONS = {}
+    FIELD_OPTIONS = {}
 
     def post_process_table(self, field_options):
         fields_add_pcapfile(obj=self)
@@ -213,7 +212,6 @@ class WiresharkInfoQuery(TableQueryBase):
         if not hasattr(settings, 'TSHARK_PATH'):
             raise ValueError('Please set local_settings.TSHARK_PATH '
                              'to the proper path to the tshark executable')
-
 
         pcapfile = PcapFile(pcapfilename)
         pcapfile.info()

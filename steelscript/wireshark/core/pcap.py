@@ -8,7 +8,6 @@ import os
 import re
 import cPickle
 import logging
-import shlex
 import subprocess
 import datetime
 import tempfile
@@ -16,15 +15,15 @@ import pytz
 import tzlocal
 
 from dateutil.parser import parse as dateutil_parse
-from collections import namedtuple
 
 from steelscript.common.timeutils import parse_timedelta
-from steelscript.wireshark.core.exceptions import *
+from steelscript.wireshark.core.exceptions import InvalidField
 
 
 logger = logging.getLogger(__name__)
 
 local_tz = tzlocal.get_localzone()
+
 
 class PcapFile(object):
 
@@ -115,7 +114,8 @@ class PcapFile(object):
                '-E', 'aggregator=,']
 
         if starttime or endtime:
-            logger.info("Creating temp pcap file for timerange: %s-%s" % (starttime, endtime))
+            logger.info("Creating temp pcap file for timerange: %s-%s" %
+                        (starttime, endtime))
             (fd, filename) = tempfile.mkstemp(suffix='.pcap')
             os.close(fd)
             p = self.export(filename,
@@ -148,7 +148,6 @@ class PcapFile(object):
                 else:
                     raise InvalidField(n)
 
-
             cmd.extend(['-e', n])
 
         logger.info('subprocess: %s' % ' '.join(cmd))
@@ -172,7 +171,7 @@ class PcapFile(object):
 
             if use_tshark_fields:
                 newcols = []
-                for i,col in enumerate(cols):
+                for i, col in enumerate(cols):
                     t = fields[i].datatype
                     if col == '' or col is None:
                         col = None
@@ -199,6 +198,7 @@ class PcapFile(object):
                 return None
         else:
             return data
+
 
 class TSharkField(object):
 
@@ -234,6 +234,7 @@ class TSharkField(object):
     def __setstate__(self, state):
         (self.name, self.desc, self.datatype_str,
          self.datatype, self.protocol) = state
+
 
 class TSharkFields(object):
 
@@ -272,7 +273,6 @@ class TSharkFields(object):
         logger.info('subprocess: %s' % ' '.join(cmd))
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
-        data = []
         self.protocols = {}
         self.fields = {}
         while proc.poll() is None:

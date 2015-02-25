@@ -56,7 +56,7 @@ report.add_widget(yui3.TableWidget, table, 'PCAP Info', width=12, height=200)
 #
 
 table = WiresharkTable.create('pcap', resample=True,
-                              resolution='1m', resolutions=['1s','1m'])
+                              resolution='1m', resolutions=['1s', '1m'])
 
 table.add_column('pkttime', datatype=Column.DATATYPE_TIME, iskey=True,
                  field='frame.time_epoch')
