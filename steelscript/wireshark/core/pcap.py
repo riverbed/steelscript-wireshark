@@ -189,6 +189,8 @@ class PcapFile(object):
                         col = (datetime.datetime.utcfromtimestamp(float(col))
                                .replace(tzinfo=pytz.utc)
                                .astimezone(local_tz))
+                    elif t in [int, long]:
+                        col = t(col, base=0)
                     else:
                         col = t(col)
                     newcols.append(col)
