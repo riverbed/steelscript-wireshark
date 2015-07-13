@@ -27,6 +27,10 @@ local_tz = tzlocal.get_localzone()
 
 class PcapFile(object):
 
+    OCCURRENCE_FIRST = 'f'
+    OCCURRENCE_LAST = 'l'
+    OCCURRENCE_ALL = 'a'
+
     def __init__(self, filename):
         self.filename = filename
 
@@ -89,7 +93,7 @@ class PcapFile(object):
         cmd.append(filename)
 
         logger.info('subprocess: %s' % ' '.join(cmd))
-        o = subprocess.check_output(cmd)
+        subprocess.check_output(cmd)
 
         return PcapFile(filename)
 
@@ -102,7 +106,8 @@ class PcapFile(object):
     def query(self, fieldnames, filterexpr=None,
               starttime=None, endtime=None, duration=None,
               use_tshark_fields=True,
-              occurrence='f',
+              occurrence=OCCURRENCE_ALL,
+              aggregator=',',
               as_dataframe=False):
 
         if not self.filename:
@@ -110,8 +115,10 @@ class PcapFile(object):
 
         cmd = ['tshark', '-r', self.filename,
                '-T', 'fields',
-               '-E', 'occurrence=%s' % occurrence,
-               '-E', 'aggregator=,']
+               '-E', 'occurrence=%s' % occurrence]
+
+        if occurrence == self.OCCURRENCE_ALL:
+            cmd.extend(['-E', 'aggregator=%s' % aggregator])
 
         if starttime or endtime:
             logger.info("Creating temp pcap file for timerange: %s-%s" %
@@ -127,7 +134,7 @@ class PcapFile(object):
                           use_tshark_fields=use_tshark_fields,
                           occurrence=occurrence,
                           as_dataframe=as_dataframe)
-            #p.delete()
+            p.delete()
             return res
 
         if filterexpr not in [None, '']:
@@ -185,7 +192,27 @@ class PcapFile(object):
                     else:
                         col = t(col)
                     newcols.append(col)
-                data.append(newcols)
+                cols = newcols
+
+            if occurrence == PcapFile.OCCURRENCE_ALL:
+                newcols = []
+                needs_dup = []
+                n = 0
+                for i, col in enumerate(cols):
+                    if type(col) is str and ',' in col:
+                        newcol = col.split(',')
+                        newcols.append(newcol)
+                        n = len(newcol)
+                    else:
+                        newcols.append(col)
+                        needs_dup.append(i)
+
+                if n:
+                    for i in needs_dup:
+                        newcols[i] = ([newcols[i]] * n)
+                    data.extend(map(list, zip(*newcols)))
+                else:
+                    data.append(newcols)
             else:
                 data.append(cols)
 
