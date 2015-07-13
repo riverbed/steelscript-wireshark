@@ -181,8 +181,7 @@ class PcapFile(object):
                 needs_dup = []
                 n = 0
                 for i, col in enumerate(cols):
-                    if ',' in col:
-                        print "col has comma: %s" % col
+                    if col and ',' in col:
                         if n:
                             raise ValueError(
                                 'Cannot process two columns that '
