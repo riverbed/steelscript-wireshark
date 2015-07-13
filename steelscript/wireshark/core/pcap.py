@@ -176,47 +176,61 @@ class PcapFile(object):
                     return
                 continue
 
-            if use_tshark_fields:
-                newcols = []
-                for i, col in enumerate(cols):
-                    t = fields[i].datatype
-                    if col == '' or col is None:
-                        col = None
-                    elif t == datetime.datetime:
-                        col = (dateutil_parse(col)
-                               .replace(tzinfo=local_tz))
-                    elif fields[i].name == 'frame.time_epoch':
-                        col = (datetime.datetime.utcfromtimestamp(float(col))
-                               .replace(tzinfo=pytz.utc)
-                               .astimezone(local_tz))
-                    elif t in [int, long]:
-                        col = t(col, base=0)
-                    else:
-                        col = t(col)
-                    newcols.append(col)
-                cols = newcols
-
             if occurrence == PcapFile.OCCURRENCE_ALL:
                 newcols = []
                 needs_dup = []
                 n = 0
                 for i, col in enumerate(cols):
-                    if type(col) is str and ',' in col:
+                    if ',' in col:
+                        print "col has comma: %s" % col
+                        if n:
+                            raise ValueError(
+                                'Cannot process two columns that '
+                                'have multiple occurrences')
+                        # Split col data into an array
                         newcol = col.split(',')
                         newcols.append(newcol)
                         n = len(newcol)
                     else:
+                        # Single valued column, keep track of
+                        # the col index, as we need to dup it
+                        # below
                         newcols.append(col)
                         needs_dup.append(i)
 
                 if n:
                     for i in needs_dup:
                         newcols[i] = ([newcols[i]] * n)
-                    data.extend(map(list, zip(*newcols)))
+                    rows = (map(list, zip(*newcols)))
                 else:
-                    data.append(newcols)
+                    rows = [newcols]
             else:
-                data.append(cols)
+                rows = [cols]
+
+            if use_tshark_fields:
+                newrows = []
+                for row in rows:
+                    newcols = []
+                    for i, col in enumerate(row):
+                        t = fields[i].datatype
+                        if col == '' or col is None:
+                            col = None
+                        elif t == datetime.datetime:
+                            col = (dateutil_parse(col)
+                                   .replace(tzinfo=local_tz))
+                        elif fields[i].name == 'frame.time_epoch':
+                            col = (datetime.datetime.utcfromtimestamp(float(col))
+                                   .replace(tzinfo=pytz.utc)
+                                   .astimezone(local_tz))
+                        elif t in [int, long]:
+                            col = t(col, base=0)
+                        else:
+                            col = t(col)
+                        newcols.append(col)
+                    newrows.append(newcols)
+                rows = newrows
+
+            data.extend(rows)
 
         if as_dataframe:
             if len(data) > 0:
