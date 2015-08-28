@@ -1,4 +1,4 @@
-# Copyright (c) 2014 Riverbed Technology, Inc.
+# Copyright (c) 2015 Riverbed Technology, Inc.
 #
 # This software is licensed under the terms and conditions of the MIT License
 # accompanying the software ("License").  This software is distributed "AS IS"
@@ -13,7 +13,7 @@ class Plugin(AppsPlugin):
     title = 'Wireshark plugin'
     description = 'Extract metrics from pcap files'
     version = pkg_resources.get_distribution('steelscript.wireshark').version
-    author = 'Christopher J. White'
+    author = 'Riverbed Technology'
 
     enabled = True
     can_disable = True
