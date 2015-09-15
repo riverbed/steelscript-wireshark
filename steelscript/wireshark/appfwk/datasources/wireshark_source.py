@@ -237,10 +237,13 @@ class WiresharkInfoQuery(TableQueryBase):
 
 
 class WiresharkPcapTable(AnalysisTable):
-    """This  analysitable requires an input table that returns
-    a data frame of the pcap file name without the '.pcap'
-    extension. The file should be located in the project's
-    data cache directory as 'data/datacache/pcaps'.
+    """This table processes downloaded or uploaded PCAP files.
+    For the downloaded case, this table looks at the dependant
+    table to determine where to find the PCAP file to analyze.
+    It also supports uploading a PCAP file to analyze. When
+    processing the PCAP file, this table might split the file
+    to optimize performance based on the split_threshold table
+    option.
     """
     class Meta:
         proxy = True
