@@ -10,8 +10,12 @@ A data source for querying data from pcap files via tshark
 
 import logging
 import os
-
+import math
+import copy
 import pandas
+import shutil
+import subprocess
+import multiprocessing
 
 from django.forms.widgets import FileInput
 from django import forms
@@ -23,8 +27,15 @@ from steelscript.appfwk.apps.datasource.models \
     import DatasourceTable, TableField, Column, TableQueryBase
 from steelscript.appfwk.apps.datasource.forms \
     import FileSelectField, fields_add_resolution, fields_add_time_selection
+from steelscript.appfwk.apps.jobs import QueryComplete, QueryContinue, Job
+from steelscript.appfwk.apps.datasource.modules.analysis import \
+    AnalysisQuery, AnalysisException, AnalysisTable
+from steelscript.appfwk.apps.datasource.models import Table
 
 logger = logging.getLogger(__name__)
+
+
+SPLIT_DIR = '/tmp/split_pcaps'
 
 
 class WiresharkColumn(Column):
@@ -82,7 +93,8 @@ class WiresharkTable(DatasourceTable):
     _column_class = 'WiresharkColumn'
     _query_class = 'WiresharkQuery'
 
-    TABLE_OPTIONS = {}
+    TABLE_OPTIONS = {'show_upload': True,
+                     'show_entire_pcap': True}
     FIELD_OPTIONS = {'resolution': '1m',
                      'resolutions': ('1s', '1m', '15min', '1h'),
                      'pcapfile_astextfield': False}
@@ -91,19 +103,22 @@ class WiresharkTable(DatasourceTable):
         #
         # Add criteria fields that are required by this table
         #
-        TableField.create(keyword='entire_pcap', obj=self,
-                          field_cls=forms.BooleanField,
-                          label='Entire PCAP',
-                          initial=True,
-                          required=False)
+        if self.options.show_entire_pcap:
+            TableField.create(keyword='entire_pcap', obj=self,
+                              field_cls=forms.BooleanField,
+                              label='Entire PCAP',
+                              initial=True,
+                              required=False)
 
         fields_add_time_selection(self, show_start=True, show_end=True,
                                   show_duration=False)
         fields_add_resolution(obj=self,
                               initial=field_options['resolution'],
                               resolutions=field_options['resolutions'])
-        fields_add_pcapfile(
-            obj=self, astextfield=field_options['pcapfile_astextfield'])
+
+        if self.options.show_upload:
+            fields_add_pcapfile(
+                obj=self, astextfield=field_options['pcapfile_astextfield'])
         fields_add_filterexpr(obj=self)
 
 
@@ -219,3 +234,143 @@ class WiresharkInfoQuery(TableQueryBase):
                      ['End time', str(pcapfile.endtime)],
                      ['Number of packets', pcapfile.numpackets]]
         return True
+
+
+class WiresharkPcapTable(AnalysisTable):
+    """This  analysitable requires an input table that returns
+    a data frame of the pcap file name without the '.pcap'
+    extension. The file should be located in the project's
+    data cache directory as 'data/datacache/pcaps'.
+    """
+    class Meta:
+        proxy = True
+
+    _column_class = 'WiresharkColumn'
+    _query_class = 'WiresharkPcapQuery'
+
+    TABLE_OPTIONS = {'split_threshold': 0,
+                     }
+
+    FIELD_OPTIONS = {'resolution': '1s',
+                     'resolutions': ('1s', '1m', '15min', '1h')}
+
+    def post_process_table(self, field_options):
+        self.copy_columns(self.options.related_tables['wireshark'])
+        super(WiresharkPcapTable, self).post_process_table(field_options)
+
+
+class WiresharkPcapQuery(AnalysisQuery):
+
+    def split_pcap(self):
+        cpu_num = multiprocessing.cpu_count()
+        per_file = int(math.ceil(self.pkt_num/cpu_num))
+
+        if not os.path.exists(SPLIT_DIR):
+            os.mkdir(SPLIT_DIR)
+        os.mkdir(self.output_dir)
+
+        cmd = 'editcap -c %s %s %s/' % (per_file, self.filename,
+                                        self.output_dir)
+        subprocess.Popen(cmd, shell=True).wait()
+
+    @property
+    def file_handle(self):
+        """Return the basename of the path without extension.
+        If filename is 'a/b/c.d', return 'c'.
+        """
+        return os.path.basename(self.filename).rsplit('.', 1)[0]
+
+    def analyze(self, jobs=None):
+
+        criteria = self.job.criteria
+
+        if jobs:
+            job = jobs.values()[0]
+            if job.status == Job.ERROR:
+                raise AnalysisException("%s for getting pcap file failed: %s"
+                                        % (job, job.message))
+            criteria.entire_pcap = True
+            self.filename = job.data()['filename'][0]
+        else:
+            self.filename = criteria.pcapfilename
+
+        pcap = PcapFile(self.filename)
+
+        try:
+            pcap_info = pcap.info()
+        except ValueError:
+            raise AnalysisException("No packets in %s" % self.filename)
+
+        logger.debug("%s: File info %s" % (self.__class__.__name__, pcap_info))
+
+        self.pkt_num = int(pcap_info['Number of packets'])
+
+        min_pkt_num = self.table.options.split_threshold
+
+        wt = Table.from_ref(self.table.options.related_tables['wireshark'])
+
+        depjobs = {}
+        if self.pkt_num < min_pkt_num:
+            # No need to split the pcap file
+            criteria.pcapfilename = self.filename
+            job = Job.create(table=wt, criteria=criteria,
+                             update_progress=False, parent=self.job)
+
+            depjobs[job.id] = job
+
+            logger.debug("%s starting single job" % self.__class__.__name__)
+            return QueryContinue(self.collect, depjobs)
+
+        self.output_dir = os.path.join(SPLIT_DIR, self.file_handle)
+        self.split_pcap()
+
+        split_files = os.listdir(self.output_dir)
+
+        if not split_files:
+            raise AnalysisException('No pcap file found after splitting %s'
+                                    % self.filename)
+
+        for split in split_files:
+            # use wireshark table
+            ws_criteria = copy.copy(criteria)
+            ws_criteria.pcapfilename = os.path.join(self.output_dir, split)
+
+            # for ease of removing the split directory in collect func
+            ws_criteria.output_dir = self.output_dir
+
+            job = Job.create(table=wt, criteria=ws_criteria,
+                             update_progress=False, parent=self.job)
+
+            depjobs[job.id] = job
+
+        logger.debug("%s starting multiple jobs" % self.__class__.__name__)
+
+        return QueryContinue(self.collect, jobs=depjobs)
+
+    def collect(self, jobs=None):
+        dfs = []
+
+        # Removing the temporary split directory if it exists
+        output_dir = getattr(jobs.values()[0].criteria, 'output_dir', None)
+        if output_dir and os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
+
+        for jid, job in jobs.iteritems():
+            if job.status == Job.ERROR:
+                raise AnalysisException("%s for pcap file %s failed: %s"
+                                        % (job, job.criteria.pcapfilename,
+                                           job.message))
+            subdf = job.data()
+            if subdf is None:
+                continue
+            dfs.append(subdf)
+
+        if not dfs:
+            logger.debug("%s: no data is collected" % self.__class__.__name__)
+            return QueryComplete(None)
+
+        df = pandas.concat(dfs, ignore_index=True)
+
+        logger.debug("%s: Query ended." % self.__class__.__name__)
+
+        return QueryComplete(df)
