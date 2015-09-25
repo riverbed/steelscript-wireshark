@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+[1.0]
+ * Added appfwk WiresharkPcapTable class
+ * Bugfixes
+ * Documentation updates
+
 [0.9.4.1]
  * PEP8 cleanup
 
