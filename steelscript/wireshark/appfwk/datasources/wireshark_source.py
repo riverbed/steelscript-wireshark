@@ -17,9 +17,9 @@ import shutil
 import subprocess
 import multiprocessing
 
-from django.forms.widgets import FileInput
 from django import forms
 from django.conf import settings
+from django.forms.widgets import FileInput
 
 from steelscript.wireshark.core.pcap import PcapFile
 
@@ -126,6 +126,7 @@ class WiresharkQuery(TableQueryBase):
 
     def run(self):
         criteria = self.job.criteria
+
         table = self.table
         columns = table.get_columns(synthetic=False)
 
@@ -257,10 +258,6 @@ class WiresharkPcapTable(AnalysisTable):
     FIELD_OPTIONS = {'resolution': '1s',
                      'resolutions': ('1s', '1m', '15min', '1h')}
 
-    def post_process_table(self, field_options):
-        self.copy_columns(self.options.related_tables['wireshark'])
-        super(WiresharkPcapTable, self).post_process_table(field_options)
-
 
 class WiresharkPcapQuery(AnalysisQuery):
 
@@ -316,6 +313,7 @@ class WiresharkPcapQuery(AnalysisQuery):
         if self.pkt_num < min_pkt_num:
             # No need to split the pcap file
             criteria.pcapfilename = self.filename
+            criteria.entire_pcap = True
             job = Job.create(table=wt, criteria=criteria,
                              update_progress=False, parent=self.job)
 
