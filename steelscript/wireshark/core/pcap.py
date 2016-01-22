@@ -138,7 +138,8 @@ class PcapFile(object):
             return res
 
         if filterexpr not in [None, '']:
-            cmd.extend(['-R', filterexpr])
+            # use new '-Y' option since '-R' is deprecated
+            cmd.extend(['-Y', filterexpr])
 
         fields = []
         for n in fieldnames:
