@@ -42,7 +42,7 @@ http://pythonhosted.org/steelscript/
 
     'install_requires': (
         'steelscript',
-        'python-datetutil',
+        'python-dateutil',
         'tzlocal',
     ),
 

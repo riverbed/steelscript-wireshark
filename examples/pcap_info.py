@@ -19,13 +19,10 @@ from steelscript.wireshark.core.pcap import PcapFile
 
 
 class PcapInfo(Application):
-
-    def __init__(self, *args, **kwargs):
-        super(PcapInfo, self).__init__(*args, **kwargs)
+    """Simple PCAP query application."""
 
     def add_options(self, parser):
         super(PcapInfo, self).add_options(parser)
-        self.add_standard_options(conn=False)
         parser.add_option('-f', '--pcap-path',
                           help='path to pcap file')
 
@@ -41,8 +38,9 @@ class PcapInfo(Application):
         pcap = PcapFile(self.options.pcap_path)
         info = pcap.info()
 
-        print Formatter.print_table([(k, v) for k, v in info.iteritems()],
-                                    ['Key', 'Value'])
+        Formatter.print_table([(k, unicode(v, errors='replace')) for k, v
+                               in info.iteritems()],
+                              headers=['Key', 'Value'])
 
 if __name__ == '__main__':
     PcapInfo().run()

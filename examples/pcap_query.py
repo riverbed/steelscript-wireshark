@@ -20,15 +20,12 @@ from steelscript.wireshark.core.pcap import PcapFile
 
 
 class PcapInfo(Application):
-
-    def __init__(self, *args, **kwargs):
-        super(PcapInfo, self).__init__(*args, **kwargs)
+    """Simple PCAP Info application."""
 
     def add_options(self, parser):
         super(PcapInfo, self).add_options(parser)
-        self.add_standard_options(conn=False)
         parser.add_option('-f', '--pcap-path',
-                          help='path to pcap file')
+                          help='Absolute file path to pcap file')
         parser.add_option('-c', '--columns',
                           help='Comma-separated list of Wireshark columns '
                                'to return. Defaults to a basic set of '
@@ -51,7 +48,8 @@ class PcapInfo(Application):
         pcap = PcapFile(self.options.pcap_path)
         data = pcap.query(columns)
 
-        data_out = data[:self.options.max_rows]
+        max_rows = int(self.options.max_rows)
+        data_out = data[:max_rows]
 
         Formatter.print_table(data_out, headers=columns)
 
