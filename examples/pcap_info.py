@@ -21,10 +21,8 @@ from steelscript.wireshark.core.pcap import PcapFile
 class PcapInfo(Application):
     """Simple PCAP query application."""
 
-    def add_options(self, parser):
-        super(PcapInfo, self).add_options(parser)
-        parser.add_option('-f', '--pcap-path',
-                          help='path to pcap file')
+    def add_positional_args(self):
+        self.add_positional_arg('pcap_path', 'File path to pcap file')
 
     def validate_args(self):
         super(PcapInfo, self).validate_args()

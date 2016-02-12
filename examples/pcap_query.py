@@ -22,10 +22,11 @@ from steelscript.wireshark.core.pcap import PcapFile
 class PcapInfo(Application):
     """Simple PCAP Info application."""
 
+    def add_positional_args(self):
+        self.add_positional_arg('pcap_path', 'File path to pcap file')
+
     def add_options(self, parser):
         super(PcapInfo, self).add_options(parser)
-        parser.add_option('-f', '--pcap-path',
-                          help='Absolute file path to pcap file')
         parser.add_option('-c', '--columns',
                           help='Comma-separated list of Wireshark columns '
                                'to return. Defaults to a basic set of '
