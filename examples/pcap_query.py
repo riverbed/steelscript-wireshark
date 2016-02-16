@@ -35,6 +35,9 @@ class PcapInfo(Application):
         parser.add_option('-m', '--max-rows', default=50,
                           help='Max number of rows to print out.  Defaults '
                                'to 50.')
+        parser.add_option('-i', '--inner-join', dest='inner_join',
+                          action='store_true', help='Perform an inner join on '
+                          'the columns. Defaults to full join.')
 
     def validate_args(self):
         super(PcapInfo, self).validate_args()
@@ -48,6 +51,9 @@ class PcapInfo(Application):
         columns = self.options.columns.split(',')
         pcap = PcapFile(self.options.pcap_path)
         data = pcap.query(columns)
+
+        if self.options.inner_join:
+            data = [row for row in data if None not in row]
 
         max_rows = int(self.options.max_rows)
         data_out = data[:max_rows]
