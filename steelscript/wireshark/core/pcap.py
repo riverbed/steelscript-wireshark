@@ -63,11 +63,8 @@ class PcapFile(object):
             endtime or duration. Internally uses editcap
 
         :param str filename: path of the pcap file
-
         :param str starttime: defines a start time filter
-
         :param str endtime: defines an end time filter
-
         :param str duration: defines a duration filter
 
         """
@@ -127,19 +124,13 @@ class PcapFile(object):
 
         :param str fieldnames: name or IP address of the NetProfiler to
             connect to
-
         :param str filterexpr: the filter expression used by tshark for
             refining your data
-
         :param str starttime: defines a start time filter for the query
-
         :param str endtime: defines an end time filter for the query
-
         :param str duration: defines a duration filter for the query
-
         :param bool use_tshark_fields: use the internal class TSharkField for
             more flexibility during data manipulation. Defaults to True.
-
         :param str occurrence: defines if you want the first, last, or all
             occurrences. Values:
 
@@ -149,11 +140,9 @@ class PcapFile(object):
 
         :param str aggregator: delimiter string for seperating columns (aka
             tshark fields)
-
         :param bool as_dataframe: if true, returns a Pandas dataframe object
             with the results of the query. If false returns a list. Defaults
             to false.
-
         """
         if not self.filename:
             raise ValueError('No filename')
