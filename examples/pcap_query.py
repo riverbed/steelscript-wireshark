@@ -55,6 +55,9 @@ class PcapInfo(Application):
         if self.options.inner_join:
             data = [row for row in data if None not in row]
 
+        if not data:
+            print('No rows found matching your input')
+
         max_rows = int(self.options.max_rows)
         data_out = data[:max_rows]
 
