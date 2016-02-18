@@ -5,34 +5,8 @@ This package provides device specific bindings for interacting
 with Riverbed SteelCentral Wireshark devices as part of the Riverbed
 SteelScript for Python.
 
-Quick Start
------------
-
-Installation
->>>>>>>>>>>>
-
-1. Verify you have **Python 2.7** installed, ``pip`` installed, and have setup a virtual enviornment.
-2. Run ``pip install steelscript`` to install the core SteelScript package.
-3. Run ``steel install`` to install the core SteelScript modules, including `steelscript-wireshark`.
-
-For the full SteelScript core docs, please visit:
-
-  `https://support.riverbed.com/apis/steelscript/index.html <https://support.riverbed.com/apis/steelscript/index.html>`_
-
-
-Getting Started
->>>>>>>>>>>>>>>
-
-1. Run ``steel mkworkspace`` to create a directory that contains all the SteelScript example scripts.
-2. Navigate to ``steelscript-workspace/wireshark-examples/``. There you will find all steelscript-wireshark example scripts.
-3. Run ``python pcap_info.py [path-to-your-pcap-file]``. This will print out the pcap file's basic details.
-4. Copy one of the example scripts, and customize it to fit your needs. 
-
-More information on API's available on 
-
-    `https://support.riverbed.com/apis/steelscript/index.html <https://support.riverbed.com/apis/steelscript/index.html>`_
-
-
+`CLICK HERE TO VIEW DOCS AND GET STARTED <https://support.riverbed.com/apis/steelscript/wireshark/getting-started.html>`_
+----------------------------------------
 
 Example Usage
 -------------
@@ -68,4 +42,3 @@ Copyright (c) 2015 Riverbed Technology, Inc.
 SteelScript-Wireshark is licensed under the terms and conditions of the MIT
 License accompanying the software ("License").  SteelScript-Wireshark is
 distributed "AS IS" as set forth in the License.
-
