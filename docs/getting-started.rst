@@ -9,10 +9,7 @@ Quick Start
 3. Run ``python pcap_info.py [path-to-your-pcap-file]``. This will print out the pcap file's basic details.
 4. Copy one of the example scripts, and customize it to fit your needs. 
 
-More information on API's available on 
-
-    `https://support.riverbed.com/apis/steelscript/index.html <https://support.riverbed.com/apis/steelscript/index.html>`_
-
+More information on API's `available here <pcap-api.html>`_
 
 
 Example Usage

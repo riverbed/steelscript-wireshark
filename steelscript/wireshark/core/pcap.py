@@ -39,6 +39,7 @@ class PcapFile(object):
         self.endtime = None
 
     def info(self):
+        """Returns info on pcap file, similar to running capinfos -A -m -T"""
         if self._info is None:
 
             cmd = ['capinfos', '-A', '-m', '-T', self.filename]
@@ -58,6 +59,18 @@ class PcapFile(object):
 
     def export(self, filename,
                starttime=None, endtime=None, duration=None):
+        """Returns a PCAP file, potentially including your specified starttime,
+            endtime or duration. Internally uses editcap
+
+        :param str filename: path of the pcap file
+
+        :param str starttime: defines a start time filter
+
+        :param str endtime: defines an end time filter
+
+        :param str duration: defines a duration filter
+
+        """
 
         cmd = ['editcap']
 
@@ -98,6 +111,7 @@ class PcapFile(object):
         return PcapFile(filename)
 
     def delete(self):
+        """Removes the filename from the PcapFile object"""
         if os.path.exists(self.filename):
             os.unlink(self.filename)
 
@@ -109,7 +123,38 @@ class PcapFile(object):
               occurrence=OCCURRENCE_ALL,
               aggregator=',',
               as_dataframe=False):
+        """Parses the PCAP file, returning the data in a tabular format
 
+        :param str fieldnames: name or IP address of the NetProfiler to
+            connect to
+
+        :param str filterexpr: the filter expression used by tshark for
+            refining your data
+
+        :param str starttime: defines a start time filter for the query
+
+        :param str endtime: defines an end time filter for the query
+
+        :param str duration: defines a duration filter for the query
+
+        :param bool use_tshark_fields: use the internal class TSharkField for
+            more flexibility during data manipulation. Defaults to True.
+
+        :param str occurrence: defines if you want the first, last, or all
+            occurrences. Values:
+
+                - 'f' (OCCURRENCE_FIRST) - First
+                - 'l' (OCCURRENCE_LAST) - Last
+                - 'a' (OCCURRENCE_ALL) - All
+
+        :param str aggregator: delimiter string for seperating columns (aka
+            tshark fields)
+
+        :param bool as_dataframe: if true, returns a Pandas dataframe object
+            with the results of the query. If false returns a list. Defaults
+            to false.
+
+        """
         if not self.filename:
             raise ValueError('No filename')
 
