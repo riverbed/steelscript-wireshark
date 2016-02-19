@@ -35,24 +35,27 @@ class PcapInfo(Application):
         parser.add_option('-m', '--max-rows', default=50,
                           help='Max number of rows to print out.  Defaults '
                                'to 50.')
-        parser.add_option('-i', '--inner-join', dest='inner_join',
-                          action='store_true', help='Perform an inner join on '
-                          'the columns. Defaults to full join.')
+        parser.add_option('-j', '--join', dest='join', default='FULL',
+                          help='The type of join to be used to construct the '
+                               'table. Possible values: FULL, INNER')
 
     def validate_args(self):
         super(PcapInfo, self).validate_args()
 
         path = self.options.pcap_path
+        join = self.options.join
 
         if path is None or not os.path.exists(path):
             self.parser.error('Must pass absolute path to PCAP file.')
+        if join is not None and join not in ['FULL', 'INNER']:
+            self.parser.error('Join must be either FULL or INNER.')
 
     def main(self):
         columns = self.options.columns.split(',')
         pcap = PcapFile(self.options.pcap_path)
         data = pcap.query(columns)
 
-        if self.options.inner_join:
+        if self.options.join == 'INNER':
             data = [row for row in data if None not in row]
 
         if not data:
@@ -65,3 +68,4 @@ class PcapInfo(Application):
 
 if __name__ == '__main__':
     PcapInfo().run()
+
