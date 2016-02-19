@@ -126,7 +126,7 @@ class PcapFile(object):
         are multiple fields that have multiple values.
 
         :param str fieldnames: a list of field names for the desired values.
-            Use the aggregator value to seperate fields
+            Use the aggregator string for seperating columns
         :param str filterexpr: the filter expression used by tshark for
             refining your data
         :param str starttime: defines a start time filter for the query
