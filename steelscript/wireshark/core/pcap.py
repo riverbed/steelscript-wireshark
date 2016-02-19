@@ -109,7 +109,7 @@ class PcapFile(object):
         return PcapFile(filename)
 
     def delete(self):
-        """Removes the filename from the PcapFile object and deletes the file"""
+        """Removes the filename from PcapFile object and deletes the file"""
         if os.path.exists(self.filename):
             os.unlink(self.filename)
 
