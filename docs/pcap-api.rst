@@ -1,7 +1,7 @@
 PCAP API
 ========
 
-Most opperations can be performed with the :py:class`PcapFile` class.
+Most operations can be performed with the :py:class`PcapFile` class.
 The public methods are as follows:
 
 

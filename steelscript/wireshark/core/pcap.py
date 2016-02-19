@@ -39,7 +39,7 @@ class PcapFile(object):
         self.endtime = None
 
     def info(self):
-        """Returns info on pcap file, similar to running capinfos -A -m -T"""
+        """Returns info on pcap file, uses ``capinfos -A -m -T`` internally"""
         if self._info is None:
 
             cmd = ['capinfos', '-A', '-m', '-T', self.filename]
@@ -60,9 +60,10 @@ class PcapFile(object):
     def export(self, filename,
                starttime=None, endtime=None, duration=None):
         """Returns a PCAP file, potentially including your specified starttime,
-            endtime or duration. Internally uses editcap
+        endtime or duration. Internally uses editcap
 
-        :param str filename: path of the pcap file
+        :param str filename: the name of the new PCAP file to be
+            created/exported from the existing PCAP file
         :param str starttime: defines a start time filter
         :param str endtime: defines an end time filter
         :param str duration: defines a duration filter
@@ -108,7 +109,7 @@ class PcapFile(object):
         return PcapFile(filename)
 
     def delete(self):
-        """Removes the filename from the PcapFile object"""
+        """Removes the filename from the PcapFile object and deletes the file"""
         if os.path.exists(self.filename):
             os.unlink(self.filename)
 
@@ -120,10 +121,12 @@ class PcapFile(object):
               occurrence=OCCURRENCE_ALL,
               aggregator=',',
               as_dataframe=False):
-        """Parses the PCAP file, returning the data in a tabular format
+        """Parses the PCAP file, returning the data in a tabular format.
+        NOTE: When using OCCURRENCE_ALL you can generate an exception if there
+        are multiple fields that have multiple values.
 
-        :param str fieldnames: name or IP address of the NetProfiler to
-            connect to
+        :param str fieldnames: a list of field names for the desired values.
+            Use the aggregator value to seperate fields
         :param str filterexpr: the filter expression used by tshark for
             refining your data
         :param str starttime: defines a start time filter for the query
@@ -134,9 +137,9 @@ class PcapFile(object):
         :param str occurrence: defines if you want the first, last, or all
             occurrences. Values:
 
-                - 'f' (OCCURRENCE_FIRST) - First
-                - 'l' (OCCURRENCE_LAST) - Last
-                - 'a' (OCCURRENCE_ALL) - All
+                - 'f' (PcapFile.OCCURRENCE_FIRST) - First
+                - 'l' (PcapFile.OCCURRENCE_LAST) - Last
+                - 'a' (PcapFile.OCCURRENCE_ALL) - All
 
         :param str aggregator: delimiter string for seperating columns (aka
             tshark fields)
