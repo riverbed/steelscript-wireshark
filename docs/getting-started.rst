@@ -6,8 +6,22 @@ Quick Start
 
 1. Run ``steel mkworkspace`` to create a directory that contains all the SteelScript example scripts.
 2. Navigate to ``steelscript-workspace/wireshark-examples/``. There you will find all steelscript-wireshark example scripts.
-3. Run ``python pcap_info.py <path-to-your-pcap-file>``. This will print out the pcap file's basic details.
-4. Copy one of the example scripts, and customize it to fit your needs. 
+3. Run ``python pcap_info.py <path-to-your-pcap-file>``. This will print out the pcap file's basic details, similar to the following:
+
+=================================    =======================================
+Key                                  Value
+=================================    =======================================
+File encapsulation                   Ethernet
+RIPEMD160                            64855625794452b0d0a5624f004104189a11c8b8
+Packet size limit                    65535
+Capture duration (seconds)           7.344911
+Data byte rate (bytes/sec)           34769.11
+Number of packets                    388
+File name                            tutorial.pcap
+...etc...                            ...etc...
+=================================    =======================================
+
+4. Copy one of the example scripts to use as a template. Customize it to fit your needs.
 
 More information on API's `available here <pcap-api.html>`_.
 
