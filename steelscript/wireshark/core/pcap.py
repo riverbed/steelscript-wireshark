@@ -218,22 +218,32 @@ class PcapFile(object):
                 newcols = []
                 needs_dup = []
                 n = 0
-                for i, col in enumerate(cols):
-                    if col and ',' in col:
-                        if n:
-                            raise ValueError(
-                                'Cannot process two columns that '
-                                'have multiple occurrences')
-                        # Split col data into an array
-                        newcol = col.split(',')
-                        newcols.append(newcol)
-                        n = len(newcol)
+                try:
+                    for i, col in enumerate(cols):
+                        if col and ',' in col:
+                            if n:
+                               raise ValueError(
+                                    'Cannot process two columns that '
+                                    'have multiple occurrences')
+                            # Split col data into an array
+                            newcol = col.split(',')
+                            newcols.append(newcol)
+                            n = len(newcol)
+                        else:
+                            # Single valued column, keep track of
+                            # the col index, as we need to dup it
+                            # below
+                            newcols.append(col)
+                            needs_dup.append(i)
+                except ValueError, e:
+                    if 'multiple occurrences' in str(e):
+                        logger.warning('One packet has at least '
+                                       'two columns with multiple '
+                                       'occurrences, skip it. '
+                                       'cmd: %s' % ' '.join(cmd))
+                        continue
                     else:
-                        # Single valued column, keep track of
-                        # the col index, as we need to dup it
-                        # below
-                        newcols.append(col)
-                        needs_dup.append(i)
+                        raise e
 
                 if n:
                     for i in needs_dup:
