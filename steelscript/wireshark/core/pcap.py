@@ -222,7 +222,7 @@ class PcapFile(object):
                     for i, col in enumerate(cols):
                         if col and ',' in col:
                             if n:
-                               raise ValueError(
+                                raise ValueError(
                                     'Cannot process two columns that '
                                     'have multiple occurrences')
                             # Split col data into an array
