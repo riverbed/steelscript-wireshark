@@ -218,32 +218,32 @@ class PcapFile(object):
                 newcols = []
                 needs_dup = []
                 n = 0
-                try:
-                    for i, col in enumerate(cols):
-                        if col and ',' in col:
-                            if n:
-                                raise ValueError(
-                                    'Cannot process two columns that '
-                                    'have multiple occurrences')
-                            # Split col data into an array
-                            newcol = col.split(',')
-                            newcols.append(newcol)
-                            n = len(newcol)
-                        else:
-                            # Single valued column, keep track of
-                            # the col index, as we need to dup it
-                            # below
-                            newcols.append(col)
-                            needs_dup.append(i)
-                except ValueError, e:
-                    if 'multiple occurrences' in str(e):
-                        logger.warning('One packet has at least '
-                                       'two columns with multiple '
-                                       'occurrences, skip it. '
-                                       'cmd: %s' % ' '.join(cmd))
-                        continue
+                multi_occur = False
+                for i, col in enumerate(cols):
+                    if col and ',' in col:
+                        if n:
+                            logger.warning('One packet has at least '
+                                           'two columns with multiple '
+                                           'occurrences, skip it. '
+                                           'cmd: %s' % ' '.join(cmd))
+                            multi_occur = True
+                            break
+                        # Split col data into an array
+                        newcol = col.split(',')
+                        newcols.append(newcol)
+                        n = len(newcol)
                     else:
-                        raise e
+                        # Single valued column, keep track of
+                        # the col index, as we need to dup it
+                        # below
+                        newcols.append(col)
+                        needs_dup.append(i)
+
+                if multi_occur:
+                    # The above for loop exited due to multiple occurrences of
+                    # at least two columns in the current packet. Skip this
+                    # packet and keep processing the rest of the pcap file
+                    continue
 
                 if n:
                     for i in needs_dup:
