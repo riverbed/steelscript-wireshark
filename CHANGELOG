@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+[1.1]
+ * Document fixes
+ * Minor bug fixes
+
 [1.0]
  * Added appfwk WiresharkPcapTable class
  * Bugfixes
