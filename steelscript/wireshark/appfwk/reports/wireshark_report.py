@@ -17,15 +17,15 @@ The typical structure is as follows:
     table.add_column(name, column_options...)
     table.add_column(name, column_options...)
 
-    report.add_widget(yui3.TimeSeriesWidget, table, name, width=12)
+    report.add_widget(c3.TimeSeriesWidget, table, name, width=12)
 
 See the documeantion or sample plugin for more details
 """
 
 from steelscript.appfwk.apps.report.models import Report, Section
 from steelscript.appfwk.apps.datasource.models import Column
-
-import steelscript.appfwk.apps.report.modules.yui3 as yui3
+import steelscript.appfwk.apps.report.modules.c3 as c3
+import steelscript.appfwk.apps.report.modules.tables as tables
 
 from steelscript.wireshark.appfwk.datasources.wireshark_source \
     import WiresharkColumn, WiresharkTable, WiresharkInfoTable
@@ -49,7 +49,7 @@ table = WiresharkInfoTable.create('pcap-info')
 table.add_column('Attribute', datatype='string', iskey=True)
 table.add_column('Value', datatype='string')
 
-report.add_widget(yui3.TableWidget, table, 'PCAP Info', width=12, height=200)
+report.add_widget(tables.TableWidget, table, 'PCAP Info', width=12, height=200)
 
 #
 # Table: Process Pcap files
@@ -91,6 +91,6 @@ table.add_column('iplen_ewma', synthetic=True, label="Moving Avg",
                  compute_post_resample=True)
 
 
-report.add_widget(yui3.TimeSeriesWidget, table, "IP Bytes over Time",
+report.add_widget(c3.TimeSeriesWidget, table, "IP Bytes over Time",
                   width=12, height=400,
                   cols=['iplen', 'iplen_95', 'iplen_80', 'iplen_ewma'])
