@@ -93,4 +93,4 @@ table.add_column('iplen_ewma', synthetic=True, label="Moving Avg",
 
 report.add_widget(c3.TimeSeriesWidget, table, "IP Bytes over Time",
                   width=12, height=400,
-                  cols=['iplen', 'iplen_95', 'iplen_80', 'iplen_ewma'])
+                  valuecols=['iplen', 'iplen_95', 'iplen_80', 'iplen_ewma'])
