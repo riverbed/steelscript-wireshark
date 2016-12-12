@@ -1,6 +1,9 @@
 CHANGELOG
 =========
 
+[1.2]
+ * Update reports to use c3 library. YUI deprecated.
+
 [1.1]
  * Document fixes
  * Minor bug fixes
