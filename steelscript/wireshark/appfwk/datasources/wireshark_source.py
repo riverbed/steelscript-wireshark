@@ -27,7 +27,8 @@ from steelscript.appfwk.apps.datasource.models \
     import DatasourceTable, TableField, Column, TableQueryBase
 from steelscript.appfwk.apps.datasource.forms \
     import FileSelectField, fields_add_resolution, fields_add_time_selection
-from steelscript.appfwk.apps.jobs import QueryComplete, QueryContinue, Job
+from steelscript.appfwk.apps.jobs import QueryComplete, QueryContinue
+from steelscript.appfwk.apps.jobs.models import Job
 from steelscript.appfwk.apps.datasource.modules.analysis import \
     AnalysisQuery, AnalysisException, AnalysisTable
 from steelscript.appfwk.apps.datasource.models import Table
@@ -41,6 +42,7 @@ SPLIT_DIR = '/tmp/split_pcaps'
 class WiresharkColumn(Column):
     class Meta:
         proxy = True
+        app_label = 'steelscript.wireshark.appfwk'
 
     COLUMN_OPTIONS = {'field': None,
                       'operation': 'sum'}
@@ -88,6 +90,7 @@ class WiresharkTable(DatasourceTable):
 
     class Meta:
         proxy = True
+        app_label = 'steelscript.wireshark.appfwk'
 
     # When a custom column is used, it must be linked
     _column_class = 'WiresharkColumn'
@@ -203,6 +206,7 @@ class WiresharkInfoTable(DatasourceTable):
 
     class Meta:
         proxy = True
+        app_label = 'steelscript.wireshark.appfwk'
 
     _query_class = 'WiresharkInfoQuery'
 
@@ -248,6 +252,7 @@ class WiresharkPcapTable(AnalysisTable):
     """
     class Meta:
         proxy = True
+        app_label = 'steelscript.wireshark.appfwk'
 
     _column_class = 'WiresharkColumn'
     _query_class = 'WiresharkPcapQuery'
