@@ -276,7 +276,7 @@ class WiresharkPcapQuery(AnalysisQuery):
 
         cmd = 'editcap -c %s %s %s/' % (per_file, self.filename,
                                         self.output_dir)
-        subprocess.Popen(cmd, shell=True).wait()
+        subprocess.Popen(cmd, shell=True, env=popen_env).wait()
 
     @property
     def file_handle(self):
