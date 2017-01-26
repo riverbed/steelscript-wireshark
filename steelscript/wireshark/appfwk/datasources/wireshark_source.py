@@ -21,7 +21,7 @@ from django import forms
 from django.conf import settings
 from django.forms.widgets import FileInput
 
-from steelscript.wireshark.core.pcap import PcapFile
+from steelscript.wireshark.core.pcap import PcapFile, popen_env
 
 from steelscript.appfwk.apps.datasource.models \
     import DatasourceTable, TableField, Column, TableQueryBase
@@ -41,6 +41,7 @@ SPLIT_DIR = '/tmp/split_pcaps'
 class WiresharkColumn(Column):
     class Meta:
         proxy = True
+        app_label = 'steelscript.wireshark.appfwk'
 
     COLUMN_OPTIONS = {'field': None,
                       'operation': 'sum'}

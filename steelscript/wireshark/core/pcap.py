@@ -24,6 +24,10 @@ logger = logging.getLogger(__name__)
 
 local_tz = tzlocal.get_localzone()
 
+# include path for capinfos and tshark
+popen_env = os.environ
+popen_env["PATH"] = "/usr/local/bin/:" + popen_env["PATH"]
+
 
 class PcapFile(object):
 
@@ -196,7 +200,7 @@ class PcapFile(object):
             cmd.extend(['-e', n])
 
         logger.info('subprocess: %s' % ' '.join(cmd))
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=popen_env)
 
         data = []
         errors = 0
@@ -361,7 +365,7 @@ class TSharkFields(object):
         cmd = ['tshark', '-G', 'fields']
 
         logger.info('subprocess: %s' % ' '.join(cmd))
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=popen_env)
 
         self.protocols = {}
         self.fields = {}
