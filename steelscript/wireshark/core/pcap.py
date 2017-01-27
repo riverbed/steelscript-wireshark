@@ -48,7 +48,7 @@ class PcapFile(object):
 
             cmd = ['capinfos', '-A', '-m', '-T', self.filename]
             logger.info('subprocess: %s' % ' '.join(cmd))
-            capinfos = subprocess.check_output(cmd)
+            capinfos = subprocess.check_output(cmd, env=popen_env)
             hdrs, vals = (capinfos.split('\n')[:2])
             self._info = dict(zip(hdrs.split(','), vals.split(',')))
 
@@ -108,7 +108,7 @@ class PcapFile(object):
         cmd.append(filename)
 
         logger.info('subprocess: %s' % ' '.join(cmd))
-        subprocess.check_output(cmd)
+        subprocess.check_output(cmd, env=popen_env)
 
         return PcapFile(filename)
 
