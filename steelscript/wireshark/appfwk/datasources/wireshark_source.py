@@ -28,6 +28,7 @@ from steelscript.appfwk.apps.datasource.models \
 from steelscript.appfwk.apps.datasource.forms \
     import FileSelectField, fields_add_resolution, fields_add_time_selection
 from steelscript.appfwk.apps.pcapmgr.forms import fields_add_pcapmgr_selection
+from steelscript.appfwk.apps.pcapmgr.models import PcapDataFile
 from steelscript.appfwk.apps.jobs import QueryComplete, QueryContinue
 from steelscript.appfwk.apps.jobs.models import Job
 from steelscript.appfwk.apps.datasource.modules.analysis import \
@@ -251,10 +252,13 @@ class WiresharkPCAPMgrQuery(WiresharkQuery):
 
         if not p:
             raise ValueError("No PCAP Manager file specified")
-        elif not os.path.exists(p.datafile.path):
-            raise ValueError("No such file: %s" % p)
+        else:
+            pfile = PcapDataFile.objects.get(id=criteria.pcapmgrfile)
 
-        return p.datafile.path
+        if not os.path.exists(pfile.datafile.path):
+            raise ValueError("No such file: %s" % pfile.datafile.path)
+
+        return pfile.datafile.path
 
 
 class WiresharkInfoTable(DatasourceTable):
@@ -289,6 +293,8 @@ class WiresharkInfoQuery(TableQueryBase):
                      ['End time', str(pcapfile.endtime)],
                      ['Number of packets', pcapfile.numpackets]]
 
+        return True
+
     def get_pcap_file(self, criteria):
         p = criteria.pcapfilename
 
@@ -322,10 +328,13 @@ class WiresharkPCAPMgrInfoQuery(WiresharkInfoQuery):
 
         if not p:
             raise ValueError("No PCAP Manager file specified")
-        elif not os.path.exists(p.datafile.path):
-            raise ValueError("No such file: %s" % p)
+        else:
+            pfile = PcapDataFile.objects.get(id=criteria.pcapmgrfile)
 
-        return p.datafile.path
+        if not os.path.exists(pfile.datafile.path):
+            raise ValueError("No such file: %s" % pfile.datafile.path)
+
+        return pfile.datafile.path
 
 
 class WiresharkPcapTable(AnalysisTable):

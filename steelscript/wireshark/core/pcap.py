@@ -19,8 +19,16 @@ from dateutil.parser import parse as dateutil_parse
 from steelscript.common.timeutils import parse_timedelta
 from steelscript.wireshark.core.exceptions import InvalidField
 
+HAVE_PCAP = False
+try:
+    from steelscript.packets.core.pcap import pcap_info
+    HAVE_PCAP = True
+except ImportError:
+    pass
+
 
 logger = logging.getLogger(__name__)
+
 
 local_tz = tzlocal.get_localzone()
 
@@ -42,24 +50,53 @@ class PcapFile(object):
         self.starttime = None
         self.endtime = None
 
-    def info(self):
-        """Returns info on pcap file, uses ``capinfos -A -m -T`` internally"""
-        if self._info is None:
+    if HAVE_PCAP:
+        logger.debug("PcapFile.info() defined using steelscript pcap library.")
 
-            cmd = ['capinfos', '-A', '-m', '-T', self.filename]
-            logger.info('subprocess: %s' % ' '.join(cmd))
-            capinfos = subprocess.check_output(cmd, env=popen_env)
-            hdrs, vals = (capinfos.split('\n')[:2])
-            self._info = dict(zip(hdrs.split(','), vals.split(',')))
+        def info(self):
+            """Returns info on pcap file, uses steelscripts pcap library
+               internally"""
+            if self._info is None:
+                pfile = open(self.filename, 'rb')
+                pfile_info = pcap_info(pfile)
+                pfile.close()
+                self._info = {'Start time': pfile_info['first_timestamp'],
+                              'End time': pfile_info['last_timestamp'],
+                              'Number of packets': pfile_info['total_packets']}
 
-            self.starttime = (dateutil_parse(self._info['Start time'])
-                              .replace(tzinfo=local_tz))
-            self.endtime = (dateutil_parse(self._info['End time'])
-                            .replace(tzinfo=local_tz))
+                self.starttime = (datetime.datetime.
+                                  utcfromtimestamp(self._info['Start time']).
+                                  replace(tzinfo=local_tz))
+                self.endtime = (datetime.datetime.
+                                utcfromtimestamp(self._info['End time']).
+                                replace(tzinfo=local_tz))
 
-            self.numpackets = int(self._info['Number of packets'])
+                self.numpackets = int(self._info['Number of packets'])
 
-        return self._info
+            return self._info
+
+    else:
+        logger.debug("PcapFile.info() defined using Wireshark capinfos "
+                     "subprocess call.")
+
+        def info(self):
+            """Returns info on pcap file, uses ``capinfos -A -m -T`` internally"""
+            if self._info is None:
+
+                cmd = ['capinfos', '-A', '-m', '-T', self.filename]
+                logger.info('subprocess: %s' % ' '.join(cmd))
+                capinfos = subprocess.check_output(cmd, env=popen_env)
+                hdrs, vals = (capinfos.split('\n')[:2])
+                self._info = dict(zip(hdrs.split(','), vals.split(',')))
+
+                self.starttime = (dateutil_parse(self._info['Start time'])
+                                  .replace(tzinfo=local_tz))
+                self.endtime = (dateutil_parse(self._info['End time'])
+                                .replace(tzinfo=local_tz))
+
+                self.numpackets = int(self._info['Number of packets'])
+
+            return self._info
 
     def export(self, filename,
                starttime=None, endtime=None, duration=None):

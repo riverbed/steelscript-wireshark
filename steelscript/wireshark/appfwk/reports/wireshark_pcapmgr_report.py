@@ -35,7 +35,7 @@ from steelscript.wireshark.appfwk.datasources.wireshark_source \
 # PCAP analysis
 #
 
-report = Report(title="PCAP Analysis", position=10)
+report = Report(title="PCAP Analysis (PCAP Manager)", position=10)
 report.save()
 
 report.add_section()
@@ -49,7 +49,8 @@ table = WiresharkPCAPMgrInfoTable.create('pcap-info')
 table.add_column('Attribute', datatype='string', iskey=True)
 table.add_column('Value', datatype='string')
 
-report.add_widget(tables.TableWidget, table, 'PCAP Info', width=12, height=200)
+report.add_widget(tables.TableWidget, table, 'PCAP Info (PCAP Manager)',
+                  width=12, height=200)
 
 #
 # Table: Process Pcap files
