@@ -53,8 +53,8 @@ class PcapFile(object):
         self.endtime = None
 
     def info(self):
-        """Returns info on pcap file, uses steelscripts pcap library
-           internally"""
+        """Returns info on pcap file, uses ``capinfos -A -m -T``  or 
+        steelscript's pcap library internally depending on environment."""
         if self._info is None:
             if HAVE_PCAP:
                 logger.debug(
@@ -229,7 +229,6 @@ class PcapFile(object):
             if occurrence == self.OCCURRENCE_ALL:
                 cmd.extend(['-E', 'aggregator=%s' % aggregator])
 
-            # Don't do this if we are just going to use the pcap library
             if starttime or endtime:
                 logger.info("Creating temp pcap file for timerange: %s-%s" %
                             (starttime, endtime))
@@ -279,7 +278,7 @@ class PcapFile(object):
                     continue
                 cols = line.split('\t')
                 if len(cols) < len(fieldnames):
-                    cols.extend([None]*(len(fieldnames) - len(cols)))
+                    cols.extend([None] * (len(fieldnames) - len(cols)))
                 elif len(cols) > len(fieldnames):
                     logger.error("Could not parse line: '%s'" % line)
                     errors = errors + 1
@@ -313,10 +312,10 @@ class PcapFile(object):
                             needs_dup.append(i)
 
                     if multi_occur:
-                        # The above for loop exited due to multiple
-                        # occurrences of at least two columns in the current
-                        # packet. Skip this packet and keep processing the
-                        # rest of the pcap file
+                        # The above for loop exited due to multiple occurrences
+                        # of at least two columns in the current packet. Skip
+                        # this packet and keep processing the rest of the pcap
+                        # file
                         continue
 
                     if n:
@@ -340,10 +339,10 @@ class PcapFile(object):
                                 col = (dateutil_parse(col)
                                        .replace(tzinfo=local_tz))
                             elif fields[i].name == 'frame.time_epoch':
-                                col = (datetime.datetime
-                                       .utcfromtimestamp(float(col))
-                                       .replace(tzinfo=pytz.utc)
-                                       .astimezone(local_tz))
+                                col = (
+                                datetime.datetime.utcfromtimestamp(float(col))
+                                .replace(tzinfo=pytz.utc)
+                                .astimezone(local_tz))
                             elif t in [int, long]:
                                 col = t(col, base=0)
                             else:
