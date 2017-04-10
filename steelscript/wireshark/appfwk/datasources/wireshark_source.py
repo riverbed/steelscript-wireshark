@@ -137,10 +137,6 @@ class WiresharkQuery(TableQueryBase):
 
         pcapfilename = self.get_pcap_file(criteria)
 
-        if not hasattr(settings, 'TSHARK_PATH'):
-            raise ValueError('Please set local_settings.TSHARK_PATH '
-                             'to the proper path to the tshark executable')
-
         pcapfile = PcapFile(pcapfilename)
 
         fieldnames = []
@@ -282,10 +278,6 @@ class WiresharkInfoQuery(TableQueryBase):
         criteria = self.job.criteria
 
         pcapfilename = self.get_pcap_file(criteria)
-
-        if not hasattr(settings, 'TSHARK_PATH'):
-            raise ValueError('Please set local_settings.TSHARK_PATH '
-                             'to the proper path to the tshark executable')
 
         pcapfile = PcapFile(pcapfilename)
         pcapfile.info()
