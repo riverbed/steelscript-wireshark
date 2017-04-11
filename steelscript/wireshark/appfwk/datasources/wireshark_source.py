@@ -18,7 +18,6 @@ import subprocess
 import multiprocessing
 
 from django import forms
-from django.conf import settings
 from django.forms.widgets import FileInput
 
 from steelscript.wireshark.core.pcap import PcapFile, popen_env
@@ -140,10 +139,6 @@ class WiresharkQuery(TableQueryBase):
         elif not os.path.exists(pcapfilename):
             raise ValueError("No such file: %s" % pcapfilename)
 
-        if not hasattr(settings, 'TSHARK_PATH'):
-            raise ValueError('Please set local_settings.TSHARK_PATH '
-                             'to the proper path to the tshark executable')
-
         pcapfile = PcapFile(pcapfilename)
 
         fieldnames = []
@@ -228,10 +223,6 @@ class WiresharkInfoQuery(TableQueryBase):
             raise ValueError("No pcap file specified")
         elif not os.path.exists(pcapfilename):
             raise ValueError("No such file: %s" % pcapfilename)
-
-        if not hasattr(settings, 'TSHARK_PATH'):
-            raise ValueError('Please set local_settings.TSHARK_PATH '
-                             'to the proper path to the tshark executable')
 
         pcapfile = PcapFile(pcapfilename)
         pcapfile.info()
