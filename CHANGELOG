@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+[1.2.1]
+ * Django 1.8 compatibility
+ * Wireshark upgrade
+
 [1.2]
  * Update reports to use c3 library. YUI deprecated.
 
