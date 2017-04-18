@@ -31,7 +31,6 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-
 local_tz = tzlocal.get_localzone()
 
 # include path for capinfos and tshark
@@ -47,21 +46,21 @@ class PcapFile(object):
 
     def __init__(self, filename):
         self.filename = filename
-
         self._info = None
         self.starttime = None
         self.endtime = None
+        self.numpackets = None
 
     def info(self):
-        """Returns info on pcap file, uses ``capinfos -A -m -T``  or 
+        """Returns info on pcap file, uses ``capinfos -A -m -T`` or
         steelscript's pcap library internally depending on environment."""
         if self._info is None:
             if HAVE_PCAP:
                 logger.debug(
                     "PcapFile.info() run using steelscript pcap library.")
-                pfile = open(self.filename, 'rb')
-                pfile_info = pcap_info(pfile)
-                pfile.close()
+                with open(self.filename, 'rb') as pfile:
+                    pfile_info = pcap_info(pfile)
+
                 self._info = {'Start time': pfile_info['first_timestamp'],
                               'End time': pfile_info['last_timestamp'],
                               'Number of packets': pfile_info[
@@ -210,15 +209,10 @@ class PcapFile(object):
                 if isinstance(endtime, basestring):
                     etime = dateutil_parse(endtime)
 
-            try:
-                f = open(self.filename, 'rb')
-            except Exception as e:
-                logger.warning("Failed to open {} in binary read mode."
-                               "".format(self.filename))
-                raise e
             logger.debug(
                 "PcapFile.query() run using pcap_query.pcap_query().")
-            data = pcap_query(f, fieldnames, stime, etime)
+            with open(self.filename, 'rb') as f:
+                data = pcap_query(f, fieldnames, stime, etime)
 
         else:
 
@@ -340,9 +334,11 @@ class PcapFile(object):
                                        .replace(tzinfo=local_tz))
                             elif fields[i].name == 'frame.time_epoch':
                                 col = (
-                                datetime.datetime.utcfromtimestamp(float(col))
-                                .replace(tzinfo=pytz.utc)
-                                .astimezone(local_tz))
+                                    datetime.datetime.utcfromtimestamp(
+                                        float(col)
+                                    ).replace(tzinfo=pytz.utc)
+                                     .astimezone(local_tz)
+                                )
                             elif t in [int, long]:
                                 col = t(col, base=0)
                             else:

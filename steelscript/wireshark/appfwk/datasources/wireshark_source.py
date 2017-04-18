@@ -18,15 +18,14 @@ import subprocess
 import multiprocessing
 
 from django import forms
-from django.conf import settings
-from django.forms.widgets import FileInput
+
 
 from steelscript.wireshark.core.pcap import PcapFile, popen_env
 
 from steelscript.appfwk.apps.datasource.models \
     import DatasourceTable, TableField, Column, TableQueryBase
 from steelscript.appfwk.apps.datasource.forms \
-    import FileSelectField, fields_add_resolution, fields_add_time_selection
+    import fields_add_resolution, fields_add_time_selection
 from steelscript.appfwk.apps.pcapmgr.forms import fields_add_pcapmgr_selection
 from steelscript.appfwk.apps.pcapmgr.models import PcapDataFile
 from steelscript.appfwk.apps.jobs import QueryComplete, QueryContinue
@@ -48,29 +47,6 @@ class WiresharkColumn(Column):
 
     COLUMN_OPTIONS = {'field': None,
                       'operation': 'sum'}
-
-
-def fields_add_pcapfile(obj, keyword='pcapfilename',
-                        label='PCAP File', initial=None,
-                        astextfield=False):
-    """Add a PCAP file selection field.
-
-    :param bool astextfield: If True, use a text field instead of a
-        file selection field.  The text value is interpreted as
-        a file on the server.
-
-    """
-
-    kwargs = {}
-    if not astextfield:
-        kwargs['field_cls'] = FileSelectField
-        kwargs['field_kwargs'] = {'widget': FileInput}
-
-    field = TableField(keyword=keyword,
-                       label=label,
-                       **kwargs)
-    field.save()
-    obj.fields.add(field)
 
 
 def fields_add_filterexpr(obj,
@@ -98,11 +74,10 @@ class WiresharkTable(DatasourceTable):
     _column_class = 'WiresharkColumn'
     _query_class = 'WiresharkQuery'
 
-    TABLE_OPTIONS = {'show_upload': True,
+    TABLE_OPTIONS = {'show_pcap_mgr': True,
                      'show_entire_pcap': True}
     FIELD_OPTIONS = {'resolution': '1m',
-                     'resolutions': ('1s', '1m', '15min', '1h'),
-                     'pcapfile_astextfield': False}
+                     'resolutions': ('1s', '1m', '15min', '1h')}
 
     def post_process_table(self, field_options):
         #
@@ -121,9 +96,8 @@ class WiresharkTable(DatasourceTable):
                               initial=field_options['resolution'],
                               resolutions=field_options['resolutions'])
 
-        if self.options.show_upload:
-            fields_add_pcapfile(
-                obj=self, astextfield=field_options['pcapfile_astextfield'])
+        if self.options.show_pcap_mgr:
+            fields_add_pcapmgr_selection(obj=self)
         fields_add_filterexpr(obj=self)
 
 
@@ -195,55 +169,6 @@ class WiresharkQuery(TableQueryBase):
         return True
 
     def get_pcap_file(self, criteria):
-        p = criteria.pcapfilename
-
-        if not p:
-            raise ValueError("No pcap file specified")
-        elif not os.path.exists(p):
-            raise ValueError("No such file: %s" % p)
-
-        return p
-
-
-class WiresharkPCAPMgrTable(DatasourceTable):
-
-    class Meta:
-        proxy = True
-        app_label = 'steelscript.wireshark.appfwk'
-
-    # When a custom column is used, it must be linked
-    _column_class = 'WiresharkColumn'
-    _query_class = 'WiresharkPCAPMgrQuery'
-
-    TABLE_OPTIONS = {'show_entire_pcap': True}
-    FIELD_OPTIONS = {'resolution': '1m',
-                     'resolutions': ('1s', '1m', '15min', '1h'),
-                     'pcapfile_astextfield': False}
-
-    def post_process_table(self, field_options):
-        #
-        # Add criteria fields that are required by this table
-        #
-        if self.options.show_entire_pcap:
-            TableField.create(keyword='entire_pcap', obj=self,
-                              field_cls=forms.BooleanField,
-                              label='Entire PCAP',
-                              initial=True,
-                              required=False)
-
-        fields_add_time_selection(self, show_start=True, show_end=True,
-                                  show_duration=False)
-        fields_add_resolution(obj=self,
-                              initial=field_options['resolution'],
-                              resolutions=field_options['resolutions'])
-
-        fields_add_pcapmgr_selection(obj=self)
-        fields_add_filterexpr(obj=self)
-
-
-class WiresharkPCAPMgrQuery(WiresharkQuery):
-
-    def get_pcap_file(self, criteria):
         p = criteria.pcapmgrfile
 
         if not p:
@@ -269,7 +194,7 @@ class WiresharkInfoTable(DatasourceTable):
     FIELD_OPTIONS = {}
 
     def post_process_table(self, field_options):
-        fields_add_pcapfile(obj=self)
+        fields_add_pcapmgr_selection(obj=self)
 
 
 class WiresharkInfoQuery(TableQueryBase):
@@ -286,34 +211,6 @@ class WiresharkInfoQuery(TableQueryBase):
                      ['Number of packets', pcapfile.numpackets]]
 
         return True
-
-    def get_pcap_file(self, criteria):
-        p = criteria.pcapfilename
-
-        if not p:
-            raise ValueError("No pcap file specified")
-        elif not os.path.exists(p):
-            raise ValueError("No such file: %s" % p)
-
-        return p
-
-
-class WiresharkPCAPMgrInfoTable(DatasourceTable):
-
-    class Meta:
-        proxy = True
-        app_label = 'steelscript.wireshark.appfwk'
-
-    _query_class = 'WiresharkPCAPMgrInfoQuery'
-
-    TABLE_OPTIONS = {}
-    FIELD_OPTIONS = {}
-
-    def post_process_table(self, field_options):
-        fields_add_pcapmgr_selection(obj=self)
-
-
-class WiresharkPCAPMgrInfoQuery(WiresharkInfoQuery):
 
     def get_pcap_file(self, criteria):
         p = criteria.pcapmgrfile
