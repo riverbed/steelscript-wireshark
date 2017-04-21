@@ -28,7 +28,6 @@ try:
 except ImportError:
     pass
 
-
 logger = logging.getLogger(__name__)
 
 local_tz = tzlocal.get_localzone()
@@ -46,6 +45,7 @@ class PcapFile(object):
 
     def __init__(self, filename):
         self.filename = filename
+
         self._info = None
         self.starttime = None
         self.endtime = None
@@ -194,7 +194,6 @@ class PcapFile(object):
         arguments must be default and we can't have a filterexpr.
         """
 
-        # See if we can used PCAP lib. This is true if we have only
         if (HAVE_PCAP and fields_supported(fieldnames) and
                 filterexpr in [None, ''] and duration is None and
                 occurrence == self.OCCURRENCE_ALL and
@@ -202,6 +201,7 @@ class PcapFile(object):
 
             stime = 0.0
             etime = 0.0
+            rdf = 1 if as_dataframe else 0
             if starttime is not None:
                 if isinstance(starttime, basestring):
                     stime = dateutil_parse(starttime)
@@ -212,142 +212,137 @@ class PcapFile(object):
             logger.debug(
                 "PcapFile.query() run using pcap_query.pcap_query().")
             with open(self.filename, 'rb') as f:
-                data = pcap_query(f, fieldnames, stime, etime)
+                return pcap_query(f, fieldnames, stime, etime, rdf)
 
-        else:
+        # Continue with previous code.
+        cmd = ['tshark', '-r', self.filename,
+               '-T', 'fields',
+               '-E', 'occurrence=%s' % occurrence]
 
-            cmd = ['tshark', '-r', self.filename,
-                   '-T', 'fields',
-                   '-E', 'occurrence=%s' % occurrence]
+        if occurrence == self.OCCURRENCE_ALL:
+            cmd.extend(['-E', 'aggregator=%s' % aggregator])
 
-            if occurrence == self.OCCURRENCE_ALL:
-                cmd.extend(['-E', 'aggregator=%s' % aggregator])
+        if starttime or endtime:
+            logger.info("Creating temp pcap file for timerange: %s-%s" %
+                        (starttime, endtime))
+            (fd, filename) = tempfile.mkstemp(suffix='.pcap')
+            os.close(fd)
+            p = self.export(filename,
+                            starttime=starttime,
+                            endtime=endtime,
+                            duration=duration)
+            logger.info("Issuing query on temp pcap file")
+            res = p.query(fieldnames, filterexpr=filterexpr,
+                          use_tshark_fields=use_tshark_fields,
+                          occurrence=occurrence,
+                          as_dataframe=as_dataframe)
+            p.delete()
+            return res
 
-            if starttime or endtime:
-                logger.info("Creating temp pcap file for timerange: %s-%s" %
-                            (starttime, endtime))
-                (fd, filename) = tempfile.mkstemp(suffix='.pcap')
-                os.close(fd)
-                p = self.export(filename,
-                                starttime=starttime,
-                                endtime=endtime,
-                                duration=duration)
-                logger.info("Issuing query on temp pcap file")
-                res = p.query(fieldnames, filterexpr=filterexpr,
-                              use_tshark_fields=use_tshark_fields,
-                              occurrence=occurrence,
-                              as_dataframe=as_dataframe)
-                p.delete()
-                return res
+        if filterexpr not in [None, '']:
+            # use new '-Y' option since '-R' is deprecated
+            cmd.extend(['-Y', filterexpr])
 
-            if filterexpr not in [None, '']:
-                # use new '-Y' option since '-R' is deprecated
-                cmd.extend(['-Y', filterexpr])
+        fields = []
+        for n in fieldnames:
+            if use_tshark_fields:
+                tf = TSharkFields.instance()
+                if n in tf.protocols:
+                    # Allow protocols as a field, but convert to a string
+                    # rather than attempt to parse it
+                    fields.append(TSharkField(n, '', 'FT_STRING', n))
 
-            fields = []
-            for n in fieldnames:
-                if use_tshark_fields:
-                    tf = TSharkFields.instance()
-                    if n in tf.protocols:
-                        # Allow protocols as a field, but convert to a string
-                        # rather than attempt to parse it
-                        fields.append(TSharkField(n, '', 'FT_STRING', n))
+                elif n in tf.fields:
+                    fields.append(tf.fields[n])
 
-                    elif n in tf.fields:
-                        fields.append(tf.fields[n])
-
-                    else:
-                        raise InvalidField(n)
-
-                cmd.extend(['-e', n])
-
-            logger.info('subprocess: %s' % ' '.join(cmd))
-            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=popen_env)
-
-            data = []
-            errors = 0
-            while proc.poll() is None:
-                line = proc.stdout.readline().rstrip()
-                if not line:
-                    continue
-                cols = line.split('\t')
-                if len(cols) < len(fieldnames):
-                    cols.extend([None] * (len(fieldnames) - len(cols)))
-                elif len(cols) > len(fieldnames):
-                    logger.error("Could not parse line: '%s'" % line)
-                    errors = errors + 1
-                    if errors > 20:
-                        return
-                    continue
-
-                if occurrence == PcapFile.OCCURRENCE_ALL:
-                    newcols = []
-                    needs_dup = []
-                    n = 0
-                    multi_occur = False
-                    for i, col in enumerate(cols):
-                        if col and ',' in col:
-                            if n:
-                                logger.warning('One packet has at least '
-                                               'two columns with multiple '
-                                               'occurrences, skip it. '
-                                               'cmd: %s' % ' '.join(cmd))
-                                multi_occur = True
-                                break
-                            # Split col data into an array
-                            newcol = col.split(',')
-                            newcols.append(newcol)
-                            n = len(newcol)
-                        else:
-                            # Single valued column, keep track of
-                            # the col index, as we need to dup it
-                            # below
-                            newcols.append(col)
-                            needs_dup.append(i)
-
-                    if multi_occur:
-                        # The above for loop exited due to multiple occurrences
-                        # of at least two columns in the current packet. Skip
-                        # this packet and keep processing the rest of the pcap
-                        # file
-                        continue
-
-                    if n:
-                        for i in needs_dup:
-                            newcols[i] = ([newcols[i]] * n)
-                        rows = (map(list, zip(*newcols)))
-                    else:
-                        rows = [newcols]
                 else:
-                    rows = [cols]
+                    raise InvalidField(n)
 
-                if use_tshark_fields:
-                    newrows = []
-                    for row in rows:
-                        newcols = []
-                        for i, col in enumerate(row):
-                            t = fields[i].datatype
-                            if col == '' or col is None:
-                                col = None
-                            elif t == datetime.datetime:
-                                col = (dateutil_parse(col)
-                                       .replace(tzinfo=local_tz))
-                            elif fields[i].name == 'frame.time_epoch':
-                                col = (
-                                    datetime.datetime.utcfromtimestamp(
-                                        float(col)
-                                    ).replace(tzinfo=pytz.utc)
-                                     .astimezone(local_tz)
-                                )
-                            elif t in [int, long]:
-                                col = t(col, base=0)
-                            else:
-                                col = t(col)
-                            newcols.append(col)
-                        newrows.append(newcols)
-                    rows = newrows
+            cmd.extend(['-e', n])
 
-                data.extend(rows)
+        logger.info('subprocess: %s' % ' '.join(cmd))
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=popen_env)
+
+        data = []
+        errors = 0
+        while proc.poll() is None:
+            line = proc.stdout.readline().rstrip()
+            if not line:
+                continue
+            cols = line.split('\t')
+            if len(cols) < len(fieldnames):
+                cols.extend([None]*(len(fieldnames) - len(cols)))
+            elif len(cols) > len(fieldnames):
+                logger.error("Could not parse line: '%s'" % line)
+                errors = errors + 1
+                if errors > 20:
+                    return
+                continue
+
+            if occurrence == PcapFile.OCCURRENCE_ALL:
+                newcols = []
+                needs_dup = []
+                n = 0
+                multi_occur = False
+                for i, col in enumerate(cols):
+                    if col and ',' in col:
+                        if n:
+                            logger.warning('One packet has at least '
+                                           'two columns with multiple '
+                                           'occurrences, skip it. '
+                                           'cmd: %s' % ' '.join(cmd))
+                            multi_occur = True
+                            break
+                        # Split col data into an array
+                        newcol = col.split(',')
+                        newcols.append(newcol)
+                        n = len(newcol)
+                    else:
+                        # Single valued column, keep track of
+                        # the col index, as we need to dup it
+                        # below
+                        newcols.append(col)
+                        needs_dup.append(i)
+
+                if multi_occur:
+                    # The above for loop exited due to multiple occurrences of
+                    # at least two columns in the current packet. Skip this
+                    # packet and keep processing the rest of the pcap file
+                    continue
+
+                if n:
+                    for i in needs_dup:
+                        newcols[i] = ([newcols[i]] * n)
+                    rows = (map(list, zip(*newcols)))
+                else:
+                    rows = [newcols]
+            else:
+                rows = [cols]
+
+            if use_tshark_fields:
+                newrows = []
+                for row in rows:
+                    newcols = []
+                    for i, col in enumerate(row):
+                        t = fields[i].datatype
+                        if col == '' or col is None:
+                            col = None
+                        elif t == datetime.datetime:
+                            col = (dateutil_parse(col)
+                                   .replace(tzinfo=local_tz))
+                        elif fields[i].name == 'frame.time_epoch':
+                            col = (datetime.datetime.utcfromtimestamp(float(col))
+                                   .replace(tzinfo=pytz.utc)
+                                   .astimezone(local_tz))
+                        elif t in [int, long]:
+                            col = t(col, base=0)
+                        else:
+                            col = t(col)
+                        newcols.append(col)
+                    newrows.append(newcols)
+                rows = newrows
+
+            data.extend(rows)
 
         if as_dataframe:
             if len(data) > 0:
