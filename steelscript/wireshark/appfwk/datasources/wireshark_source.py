@@ -101,6 +101,20 @@ class WiresharkTable(DatasourceTable):
         fields_add_filterexpr(obj=self)
 
 
+def get_pcap_file(criteria):
+    p = criteria.pcapmgrfile
+
+    if not p:
+        raise ValueError("No PCAP Manager file specified")
+    else:
+        pfile = PcapDataFile.objects.get(id=p)
+
+    if not os.path.exists(pfile.datafile.path):
+        raise ValueError("No such file: %s" % pfile.datafile.path)
+
+    return pfile.datafile.path
+
+
 class WiresharkQuery(TableQueryBase):
 
     def run(self):
@@ -109,7 +123,7 @@ class WiresharkQuery(TableQueryBase):
         table = self.table
         columns = table.get_columns(synthetic=False)
 
-        pcapfilename = self.get_pcap_file(criteria)
+        pcapfilename = get_pcap_file(criteria)
 
         pcapfile = PcapFile(pcapfilename)
 
@@ -142,7 +156,8 @@ class WiresharkQuery(TableQueryBase):
             filterexpr=criteria.wireshark_filterexpr,
             use_tshark_fields=True)
 
-        if len(data) == 0:
+        # Can be list of 0 elements or None
+        if not data:
             self.data = None
             return True
 
@@ -168,19 +183,6 @@ class WiresharkQuery(TableQueryBase):
 
         return True
 
-    def get_pcap_file(self, criteria):
-        p = criteria.pcapmgrfile
-
-        if not p:
-            raise ValueError("No PCAP Manager file specified")
-        else:
-            pfile = PcapDataFile.objects.get(id=criteria.pcapmgrfile)
-
-        if not os.path.exists(pfile.datafile.path):
-            raise ValueError("No such file: %s" % pfile.datafile.path)
-
-        return pfile.datafile.path
-
 
 class WiresharkInfoTable(DatasourceTable):
 
@@ -202,7 +204,7 @@ class WiresharkInfoQuery(TableQueryBase):
     def run(self):
         criteria = self.job.criteria
 
-        pcapfilename = self.get_pcap_file(criteria)
+        pcapfilename = get_pcap_file(criteria)
 
         pcapfile = PcapFile(pcapfilename)
         pcapfile.info()
@@ -211,19 +213,6 @@ class WiresharkInfoQuery(TableQueryBase):
                      ['Number of packets', pcapfile.numpackets]]
 
         return True
-
-    def get_pcap_file(self, criteria):
-        p = criteria.pcapmgrfile
-
-        if not p:
-            raise ValueError("No PCAP Manager file specified")
-        else:
-            pfile = PcapDataFile.objects.get(id=criteria.pcapmgrfile)
-
-        if not os.path.exists(pfile.datafile.path):
-            raise ValueError("No such file: %s" % pfile.datafile.path)
-
-        return pfile.datafile.path
 
 
 class WiresharkPcapTable(AnalysisTable):

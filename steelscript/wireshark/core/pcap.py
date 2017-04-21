@@ -163,7 +163,7 @@ class PcapFile(object):
         NOTE: When using OCCURRENCE_ALL you can generate an exception if there
         are multiple fields that have multiple values.
 
-        :param str fieldnames: a list of field names for the desired values.
+        :param list fieldnames: a list of field names for the desired values.
             Use the aggregator string for seperating columns
         :param str filterexpr: the filter expression used by tshark for
             refining your data
