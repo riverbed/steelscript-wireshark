@@ -190,7 +190,7 @@ class PcapFile(object):
 
         """
         Test if we can use the pcap lib query. This is true if we only have
-        supported fields and, optionally, a start and end time. All other 
+        supported fields and, optionally, a start and end time. All other
         arguments must be default and we can't have a filterexpr.
         """
 
@@ -214,7 +214,7 @@ class PcapFile(object):
             with open(self.filename, 'rb') as f:
                 return pcap_query(f, fieldnames, stime, etime, rdf)
 
-        # Continue with previous code.
+        # Continue with native tshark query instead
         cmd = ['tshark', '-r', self.filename,
                '-T', 'fields',
                '-E', 'occurrence=%s' % occurrence]
