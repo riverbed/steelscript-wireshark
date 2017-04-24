@@ -19,7 +19,6 @@ import multiprocessing
 
 from django import forms
 
-
 from steelscript.wireshark.core.pcap import PcapFile, popen_env
 
 from steelscript.appfwk.apps.datasource.models \
@@ -122,7 +121,6 @@ class WiresharkQuery(TableQueryBase):
 
         table = self.table
         columns = table.get_columns(synthetic=False)
-
         pcapfilename = get_pcap_file(criteria)
 
         pcapfile = PcapFile(pcapfilename)
