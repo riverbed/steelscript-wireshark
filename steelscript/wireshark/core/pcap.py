@@ -212,7 +212,7 @@ class PcapFile(object):
             logger.debug(
                 "PcapFile.query() run using pcap_query.pcap_query().")
             with open(self.filename, 'rb') as f:
-                return pcap_query(f, fieldnames, stime, etime, rdf)
+                return pcap_query(f, fieldnames, stime, etime, {}, rdf=rdf)
 
         # Continue with native tshark query instead
         cmd = ['tshark', '-r', self.filename,
