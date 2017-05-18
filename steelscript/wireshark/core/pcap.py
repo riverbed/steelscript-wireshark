@@ -158,7 +158,8 @@ class PcapFile(object):
               use_tshark_fields=True,
               occurrence=OCCURRENCE_ALL,
               aggregator=',',
-              as_dataframe=False):
+              as_dataframe=False,
+              use_ss_packets=True):
         """Parses the PCAP file, returning the data in a tabular format.
         NOTE: When using OCCURRENCE_ALL you can generate an exception if there
         are multiple fields that have multiple values.
@@ -184,6 +185,8 @@ class PcapFile(object):
         :param bool as_dataframe: if true, returns a Pandas dataframe object
             with the results of the query. If false returns a list. Defaults
             to false.
+        :param bool use_ss_packets: if allows the use of steelscript.packets
+            pcap_query. Forces use of tshark if false.
         """
         if not self.filename:
             raise ValueError('No filename')
@@ -194,7 +197,11 @@ class PcapFile(object):
         arguments must be default and we can't have a filterexpr.
         """
 
-        if (HAVE_PCAP and fields_supported(fieldnames) and
+        use_pcap = False
+        if use_ss_packets:
+            use_pcap = HAVE_PCAP
+
+        if (use_pcap and fields_supported(fieldnames) and
                 filterexpr in [None, ''] and duration is None and
                 occurrence == self.OCCURRENCE_ALL and
                 aggregator == ','):
