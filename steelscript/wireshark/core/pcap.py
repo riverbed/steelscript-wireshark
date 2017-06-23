@@ -22,8 +22,7 @@ from steelscript.wireshark.core.exceptions import InvalidField
 HAVE_PCAP = False
 try:
     from steelscript.packets.core.pcap import pcap_info
-    from steelscript.packets.query.pcap_query import pcap_query, \
-        fields_supported
+    from steelscript.packets.query.pcap_query import PcapQuery
     HAVE_PCAP = True
 except ImportError:
     pass
@@ -196,12 +195,12 @@ class PcapFile(object):
         supported fields and, optionally, a start and end time. All other
         arguments must be default and we can't have a filterexpr.
         """
-
+        pq = None
         use_pcap = False
         if use_ss_packets:
             use_pcap = HAVE_PCAP
-
-        if (use_pcap and fields_supported(fieldnames) and
+            pq = PcapQuery()
+        if (use_pcap and pq.fields_supported(fieldnames) and
                 filterexpr in [None, ''] and duration is None and
                 occurrence == self.OCCURRENCE_ALL and
                 aggregator == ','):
@@ -217,9 +216,9 @@ class PcapFile(object):
                     etime = dateutil_parse(endtime)
 
             logger.debug(
-                "PcapFile.query() run using pcap_query.pcap_query().")
+                "PcapFile.query() run using PcapQuery.pcap_query().")
             with open(self.filename, 'rb') as f:
-                return pcap_query(f, fieldnames, stime, etime, {}, rdf=rdf)
+                return pq.pcap_query(f, fieldnames, stime, etime, rdf=rdf)
 
         # Continue with native tshark query instead
         cmd = ['tshark', '-r', self.filename,
