@@ -271,13 +271,14 @@ class PcapFile(object):
 
         data = []
         errors = 0
-        while proc.poll() is None:
-            line = proc.stdout.readline().rstrip()
-            if not line:
-                continue
+
+        line = proc.stdout.readline().rstrip()
+
+        while proc.poll() is None or line:
             cols = line.split('\t')
             if len(cols) < len(fieldnames):
                 cols.extend([None]*(len(fieldnames) - len(cols)))
+                logger.debug("Line incomplete: '%s'" % line)
             elif len(cols) > len(fieldnames):
                 logger.error("Could not parse line: '%s'" % line)
                 errors = errors + 1
@@ -349,6 +350,9 @@ class PcapFile(object):
                 rows = newrows
 
             data.extend(rows)
+
+            # grab next line
+            line = proc.stdout.readline().rstrip()
 
         if as_dataframe:
             if len(data) > 0:
