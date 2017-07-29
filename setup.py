@@ -61,7 +61,7 @@ http://pythonhosted.org/steelscript/
         ('share/doc/steelscript/examples/wireshark', glob('examples/*')),
     ),
 
-    'classifiers': (
+    'classifiers': [
         'Framework :: Django',
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
@@ -70,7 +70,7 @@ http://pythonhosted.org/steelscript/
         'Programming Language :: Python :: 2.7',
         'Topic :: Software Development',
         'Topic :: System :: Networking',
-    ),
+    ],
 }
 
 setup(**setup_args)
