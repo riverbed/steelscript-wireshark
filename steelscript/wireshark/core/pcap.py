@@ -6,7 +6,7 @@
 
 import os
 import re
-import cPickle
+import pickle
 import logging
 import subprocess
 import datetime
@@ -24,7 +24,7 @@ try:
     from steelscript.packets.core.pcap import pcap_info
     from steelscript.packets.query.pcap_query import PcapQuery
     HAVE_PCAP = True
-except ImportError:
+except (ImportError, ModuleNotFoundError):
     pass
 
 logger = logging.getLogger(__name__)
@@ -82,6 +82,7 @@ class PcapFile(object):
                 cmd = ['capinfos', '-A', '-m', '-T', self.filename]
                 logger.info('subprocess: %s' % ' '.join(cmd))
                 capinfos = subprocess.check_output(cmd, env=popen_env)
+                capinfos = capinfos.decode('utf8')
                 hdrs, vals = (capinfos.split('\n')[:2])
                 self._info = dict(zip(hdrs.split(','), vals.split(',')))
 
@@ -110,15 +111,15 @@ class PcapFile(object):
         cmd = ['editcap']
 
         if starttime is not None:
-            if isinstance(starttime, basestring):
+            if isinstance(starttime, str):
                 starttime = dateutil_parse(starttime)
 
         if endtime is not None:
-            if isinstance(endtime, basestring):
+            if isinstance(endtime, str):
                 endtime = dateutil_parse(endtime)
 
         if duration is not None:
-            if isinstance(duration, basestring):
+            if isinstance(duration, str):
                 duration = parse_timedelta(duration)
 
             if starttime:
@@ -197,28 +198,28 @@ class PcapFile(object):
         """
         pq = None
         use_pcap = False
-        if use_ss_packets:
+        if use_ss_packets and HAVE_PCAP:
             use_pcap = HAVE_PCAP
+        if use_pcap:
             pq = PcapQuery()
-        if (use_pcap and pq.fields_supported(fieldnames) and
-                filterexpr in [None, ''] and duration is None and
-                occurrence == self.OCCURRENCE_ALL and
-                aggregator == ','):
+            if pq.fields_supported(fieldnames and
+                    filterexpr in [None, ''] and duration is None and
+                    occurrence == self.OCCURRENCE_ALL and
+                    aggregator == ','):
+                stime = 0.0
+                etime = 0.0
+                rdf = 1 if as_dataframe else 0
+                if starttime is not None:
+                    if isinstance(starttime, str):
+                        stime = dateutil_parse(starttime)
+                if endtime is not None:
+                    if isinstance(endtime, str):
+                        etime = dateutil_parse(endtime)
 
-            stime = 0.0
-            etime = 0.0
-            rdf = 1 if as_dataframe else 0
-            if starttime is not None:
-                if isinstance(starttime, basestring):
-                    stime = dateutil_parse(starttime)
-            if endtime is not None:
-                if isinstance(endtime, basestring):
-                    etime = dateutil_parse(endtime)
-
-            logger.debug(
-                "PcapFile.query() run using PcapQuery.pcap_query().")
-            with open(self.filename, 'rb') as f:
-                return pq.pcap_query(f, fieldnames, stime, etime, rdf=rdf)
+                logger.debug(
+                    "PcapFile.query() run using PcapQuery.pcap_query().")
+                with open(self.filename, 'rb') as f:
+                    return pq.pcap_query(f, fieldnames, stime, etime, rdf=rdf)
 
         # Continue with native tshark query instead
         cmd = ['tshark', '-r', self.filename,
@@ -275,6 +276,7 @@ class PcapFile(object):
         line = proc.stdout.readline().rstrip()
 
         while proc.poll() is None or line:
+            line = line.decode('utf-8')
             cols = line.split('\t')
             if len(cols) < len(fieldnames):
                 cols.extend([None]*(len(fieldnames) - len(cols)))
@@ -320,7 +322,7 @@ class PcapFile(object):
                 if n:
                     for i in needs_dup:
                         newcols[i] = ([newcols[i]] * n)
-                    rows = (map(list, zip(*newcols)))
+                    rows = (list(map(list, zip(*newcols))))
                 else:
                     rows = [newcols]
             else:
@@ -341,7 +343,7 @@ class PcapFile(object):
                             col = (datetime.datetime.utcfromtimestamp(float(col))
                                    .replace(tzinfo=pytz.utc)
                                    .astimezone(local_tz))
-                        elif t in [int, long]:
+                        elif t in [int, int]:
                             col = t(col, base=0)
                         else:
                             col = t(col)
@@ -376,7 +378,7 @@ class TSharkField(object):
         self.datatype_str = datatype
 
         if re.match('FT_U?INT64.*', datatype):
-            self.datatype = long
+            self.datatype = int
         elif re.match('FT_(U?INT.*|FRAMENUM)', datatype):
             self.datatype = int
         elif re.match('FT_(FLOAT|DOUBLE|RELATIVE_TIME)', datatype):
@@ -427,9 +429,9 @@ class TSharkFields(object):
 
         if not ignore_cache and os.path.exists(self.CACHEFILE):
             with open(self.CACHEFILE, 'rb') as f:
-                version = cPickle.load(f)
+                version = pickle.load(f)
                 if version == self.CACHEFILE_VERSION:
-                    self.protocols, self.fields = cPickle.load(f)
+                    self.protocols, self.fields = pickle.load(f)
                     return
             logger.info("Cache file version mistmatch")
 
@@ -457,8 +459,8 @@ class TSharkFields(object):
                 self.fields[name] = TSharkField(name, desc, datatype, protocol)
 
         with open(self.CACHEFILE, 'wb', 2) as f:
-            cPickle.dump(self.CACHEFILE_VERSION, f)
-            cPickle.dump([self.protocols, self.fields], f)
+            pickle.dump(self.CACHEFILE_VERSION, f)
+            pickle.dump([self.protocols, self.fields], f)
 
     def find(self, name=None, name_re=None,
              desc=None, desc_re=None,
