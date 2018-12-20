@@ -61,13 +61,15 @@ http://pythonhosted.org/steelscript/
         ('share/doc/steelscript/examples/wireshark', glob('examples/*')),
     ),
 
+    'python_requires': '>3.5.0',
+
     'classifiers': [
         'Framework :: Django',
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
         'Intended Audience :: Information Technology',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.5',
         'Topic :: Software Development',
         'Topic :: System :: Networking',
     ],
