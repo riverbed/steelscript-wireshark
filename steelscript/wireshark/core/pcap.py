@@ -6,6 +6,7 @@
 
 import os
 import re
+import sys
 import pickle
 import logging
 import subprocess
@@ -20,12 +21,18 @@ from steelscript.common.timeutils import parse_timedelta
 from steelscript.wireshark.core.exceptions import InvalidField
 
 HAVE_PCAP = False
+
+# hack around the fact that ModuleNotFoundError is not present below 3.6
+v_i = sys.version_info
+if v_i.major == 3 and v_i.minor <= 5:
+    ModuleNotFoundError = Exception
 try:
     from steelscript.packets.core.pcap import pcap_info
     from steelscript.packets.query.pcap_query import PcapQuery
     HAVE_PCAP = True
 except (ImportError, ModuleNotFoundError):
     pass
+
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +88,9 @@ class PcapFile(object):
                     "call.")
                 cmd = ['capinfos', '-A', '-m', '-T', self.filename]
                 logger.info('subprocess: %s' % ' '.join(cmd))
-                capinfos = subprocess.check_output(cmd, env=popen_env)
+                capinfos = subprocess.check_output(cmd,
+                                                   env=popen_env,
+                                                   universal_newlines=True)
                 capinfos = capinfos.decode('utf8')
                 hdrs, vals = (capinfos.split('\n')[:2])
                 self._info = dict(zip(hdrs.split(','), vals.split(',')))
@@ -142,7 +151,7 @@ class PcapFile(object):
         cmd.append(filename)
 
         logger.info('subprocess: %s' % ' '.join(cmd))
-        subprocess.check_output(cmd, env=popen_env)
+        subprocess.check_output(cmd, env=popen_env, universal_newlines=True)
 
         return PcapFile(filename)
 
@@ -268,7 +277,10 @@ class PcapFile(object):
             cmd.extend(['-e', n])
 
         logger.info('subprocess: %s' % ' '.join(cmd))
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=popen_env)
+        proc = subprocess.Popen(cmd,
+                                stdout=subprocess.PIPE,
+                                env=popen_env,
+                                universal_newlines=True)
 
         data = []
         errors = 0
@@ -276,7 +288,6 @@ class PcapFile(object):
         line = proc.stdout.readline().rstrip()
 
         while proc.poll() is None or line:
-            line = line.decode('utf-8')
             cols = line.split('\t')
             if len(cols) < len(fieldnames):
                 cols.extend([None]*(len(fieldnames) - len(cols)))
@@ -431,14 +442,20 @@ class TSharkFields(object):
             with open(self.CACHEFILE, 'rb') as f:
                 version = pickle.load(f)
                 if version == self.CACHEFILE_VERSION:
-                    self.protocols, self.fields = pickle.load(f)
-                    return
-            logger.info("Cache file version mistmatch")
+                    protos, fields = pickle.load(f)
+                    if protos.keys() and fields.keys():
+                        self.protocols, self.fields = protos, fields
+                        return
+                else:
+                    logger.info("Cache file version mistmatch")
 
         cmd = ['tshark', '-G', 'fields']
 
         logger.info('subprocess: %s' % ' '.join(cmd))
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=popen_env)
+        proc = subprocess.Popen(cmd,
+                                stdout=subprocess.PIPE,
+                                env=popen_env,
+                                universal_newlines=True)
 
         self.protocols = {}
         self.fields = {}
