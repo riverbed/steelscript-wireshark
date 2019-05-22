@@ -35,9 +35,13 @@ class PcapInfo(Application):
     def main(self):
         pcap = PcapFile(self.options.pcap_path)
         info = pcap.info()
+        data = list()
+        for k, v in info.items():
+            if isinstance(v, bytes):
+                v = v.decode('utf-8')
+            data.append((k, v))
 
-        Formatter.print_table([(k, unicode(v, errors='replace')) for k, v
-                               in info.iteritems()],
+        Formatter.print_table(data,
                               headers=['Key', 'Value'])
 
 if __name__ == '__main__':

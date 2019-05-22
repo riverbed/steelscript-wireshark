@@ -262,7 +262,7 @@ class WiresharkPcapQuery(AnalysisQuery):
         criteria = self.job.criteria
 
         if jobs:
-            job = jobs.values()[0]
+            job = list(jobs.values())[0]
             if job.status == Job.ERROR:
                 raise AnalysisException("%s for getting pcap file failed: %s"
                                         % (job, job.message))
@@ -329,11 +329,11 @@ class WiresharkPcapQuery(AnalysisQuery):
         dfs = []
 
         # Removing the temporary split directory if it exists
-        output_dir = getattr(jobs.values()[0].criteria, 'output_dir', None)
+        output_dir = getattr(list(jobs.values())[0].criteria, 'output_dir', None)
         if output_dir and os.path.exists(output_dir):
             shutil.rmtree(output_dir)
 
-        for jid, job in jobs.iteritems():
+        for jid, job in jobs.items():
             if job.status == Job.ERROR:
                 raise AnalysisException("%s for pcap file %s failed: %s"
                                         % (job, job.criteria.pcapfilename,
