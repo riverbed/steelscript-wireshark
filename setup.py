@@ -29,8 +29,8 @@ setup_args = {
     'long_description': """SteelScript for Wireshark
 =========================
 
-SteelScript is a collection of libraries and scripts in Python and JavaScript for
-interacting with Riverbed Technology devices.
+SteelScript is a collection of libraries and scripts in Python and JavaScript
+for interacting with Riverbed Technology devices.
 
 For a complete guide to installation, see:
 
@@ -41,7 +41,7 @@ http://pythonhosted.org/steelscript/
     'zip_safe': False,
 
     'install_requires': (
-        'steelscript',
+        'steelscript>=2.0',
         'python-dateutil',
         'tzlocal',
     ),
