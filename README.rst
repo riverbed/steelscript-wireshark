@@ -1,8 +1,8 @@
-Riverbed SteelScript for SteelCentral Wireshark 
+Riverbed SteelScript for Wireshark 
 ===============================================
 
 This package provides device specific bindings for interacting
-with Riverbed SteelCentral Wireshark devices as part of the Riverbed
+with Riverbed Wireshark devices as part of the Riverbed
 SteelScript for Python.
 
 `CLICK HERE TO VIEW DOCS AND GET STARTED <https://support.riverbed.com/apis/steelscript/wireshark/getting-started.html>`_
@@ -37,7 +37,7 @@ None                 None                    200                   Apache/2.2.14
 License
 -------
 
-Copyright (c) 2019 Riverbed Technology, Inc.
+Copyright (c) 2019-2024 Riverbed Technology, Inc.
 
 SteelScript-Wireshark is licensed under the terms and conditions of the MIT
 License accompanying the software ("License").  SteelScript-Wireshark is

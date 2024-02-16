@@ -1,4 +1,4 @@
-# Copyright (c) 2019 Riverbed Technology, Inc.
+# Copyright (c) 2019-2024 Riverbed Technology, Inc.
 #
 # This software is licensed under the terms and conditions of the MIT License
 # accompanying the software ("License").  This software is distributed "AS IS"
@@ -12,12 +12,11 @@ Extract metrics from pcap files
 """
 from glob import glob
 from setuptools import setup, find_packages
-from gitpy_versioning import get_version
 
 setup_args = {
     'name':                'steelscript.wireshark',
     'namespace_packages':  ['steelscript'],
-    'version':             get_version(),
+    'version':             '24.2.1',
 
     # Update the following as needed
     'author':              'Riverbed Technology',
@@ -41,7 +40,7 @@ http://pythonhosted.org/steelscript/
     'zip_safe': False,
 
     'install_requires': (
-        'steelscript>=2.0',
+        'steelscript>=24.2.0',
         'python-dateutil',
         'tzlocal',
     ),
@@ -69,7 +68,7 @@ http://pythonhosted.org/steelscript/
         'Intended Audience :: System Administrators',
         'Intended Audience :: Information Technology',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.12',
         'Topic :: Software Development',
         'Topic :: System :: Networking',
     ],
