@@ -15,10 +15,7 @@ from setuptools import setup, find_packages
 
 setup_args = {
     'name':                'steelscript.wireshark',
-    'namespace_packages':  ['steelscript'],
     'version':             '24.2.1',
-
-    # Update the following as needed
     'author':              'Riverbed Technology',
     'author_email':        'eng-github@riverbed.com',
     'url':                 'http://pythonhosted.org/steelscript',
