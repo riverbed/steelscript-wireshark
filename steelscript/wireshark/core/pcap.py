@@ -65,8 +65,12 @@ class PcapFile(object):
             if PcapFile.HAVE_STEELSCRIPT_PACKETS:
                 logger.debug(
                     "PcapFile.info() run using steelscript pcap library.")
-                with open(self.filename, 'rb') as pfile:
-                    pfile_info = pcap_info(pfile)
+                # TODO: validate pcap_info is expecting a filename (v2) and not pfile which is a BufferedReader (v1)
+                # v1
+                # with open(self.filename, 'rb') as pfile:
+                #     pfile_info = pcap_info(pfile)
+                # v2
+                pcap_info(self.filename)
 
                 self._info = {'Start time': pfile_info['first_timestamp'],
                               'End time': pfile_info['last_timestamp'],
