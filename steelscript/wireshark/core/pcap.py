@@ -210,7 +210,7 @@ class PcapFile(object):
 
         # Use steelscript-packets if available and requested
         if PcapFile.HAVE_STEELSCRIPT_PACKETS and use_ss_packets:
-            pq = PcapQuery()
+            pq = PcapQuery(filename=self.filename)
             if pq.fields_supported(fieldnames and
                     filterexpr in [None, ''] and duration is None and
                     occurrence == self.OCCURRENCE_ALL and
