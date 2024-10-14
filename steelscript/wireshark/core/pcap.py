@@ -210,11 +210,8 @@ class PcapFile(object):
 
         # Use steelscript-packets if available and requested
         if PcapFile.HAVE_STEELSCRIPT_PACKETS and use_ss_packets:
-            pq = PcapQuery(filename=self.filename)
-            if pq.fields_supported(fieldnames and
-                    filterexpr in [None, ''] and duration is None and
-                    occurrence == self.OCCURRENCE_ALL and
-                    aggregator == ','):
+            pq = PcapQuery(filename=self.filename,wshark_fields=fieldnames)
+            if pq.fields_supported(fieldnames) and filterexpr in [None, ''] and duration is None and occurrence == self.OCCURRENCE_ALL and aggregator == ',':
                 stime = 0.0
                 etime = 0.0
                 rdf = 1 if as_dataframe else 0
@@ -225,10 +222,8 @@ class PcapFile(object):
                     if isinstance(endtime, str):
                         etime = dateutil_parse(endtime)
 
-                logger.debug(
-                    "PcapFile.query() run using PcapQuery.pcap_query().")
-                with open(self.filename, 'rb') as f:
-                    return pq.pcap_query(f, fieldnames, stime, etime, rdf=rdf)
+                logger.debug("PcapFile.query() run using PcapQuery.pcap_query().")
+                return pq.query(starttime=stime, endtime=etime, num_packets=0, dataframe=rdf)
 
         # Continue with native tshark query instead
         cmd = ['tshark', '-r', self.filename,
