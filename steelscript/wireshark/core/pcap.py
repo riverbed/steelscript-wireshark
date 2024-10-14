@@ -1,4 +1,4 @@
-# Copyright (c) 2019 Riverbed Technology, Inc.
+# Copyright (c) 2019 - 2024 Riverbed Technology, Inc.
 #
 # This software is licensed under the terms and conditions of the MIT License
 # accompanying the software ("License").  This software is distributed "AS IS"
@@ -20,19 +20,17 @@ from dateutil.parser import parse as dateutil_parse
 from steelscript.common.timeutils import parse_timedelta
 from steelscript.wireshark.core.exceptions import InvalidField
 
-HAVE_PCAP = False
+## Try to load method from SteelScript Packets module
+try:
+    from steelscript.packets.core.pcap import pcap_info
+    from steelscript.packets.query.pcap_query import PcapQuery
+except (ImportError, ModuleNotFoundError):
+    pass
 
 # hack around the fact that ModuleNotFoundError is not present below 3.6
 v_i = sys.version_info
 if v_i.major == 3 and v_i.minor <= 5:
     ModuleNotFoundError = Exception
-try:
-    from steelscript.packets.core.pcap import pcap_info
-    from steelscript.packets.query.pcap_query import PcapQuery
-    HAVE_PCAP = True
-except (ImportError, ModuleNotFoundError):
-    pass
-
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +42,9 @@ popen_env["PATH"] = "/usr/local/bin/:" + popen_env["PATH"]
 
 
 class PcapFile(object):
+
+    # static variable, set to True if SteelScript Packet module is available and the required methods have been loaded
+    HAVE_STEELSCRIPT_PACKETS = 'steelscript.packets.core.pcap' in sys.modules and 'steelscript.packets.query.pcap_query' in sys.modules and 'pcap_info' in globals() and 'PcapQuery' in globals()
 
     OCCURRENCE_FIRST = 'f'
     OCCURRENCE_LAST = 'l'
@@ -61,7 +62,7 @@ class PcapFile(object):
         """Returns info on pcap file, uses ``capinfos -A -m -T`` or
         steelscript's pcap library internally depending on environment."""
         if self._info is None:
-            if HAVE_PCAP:
+            if PcapFile.HAVE_STEELSCRIPT_PACKETS:
                 logger.debug(
                     "PcapFile.info() run using steelscript pcap library.")
                 with open(self.filename, 'rb') as pfile:
@@ -91,6 +92,7 @@ class PcapFile(object):
                 capinfos = subprocess.check_output(cmd,
                                                    env=popen_env,
                                                    universal_newlines=True)
+                capinfos = capinfos.decode('utf8')
                 hdrs, vals = (capinfos.split('\n')[:2])
                 self._info = dict(zip(hdrs.split(','), vals.split(',')))
 
@@ -205,10 +207,9 @@ class PcapFile(object):
         arguments must be default and we can't have a filterexpr.
         """
         pq = None
-        use_pcap = False
-        if use_ss_packets and HAVE_PCAP:
-            use_pcap = HAVE_PCAP
-        if use_pcap:
+
+        # Use steelscript-packets if available and requested
+        if PcapFile.HAVE_STEELSCRIPT_PACKETS and use_ss_packets:
             pq = PcapQuery()
             if pq.fields_supported(fieldnames and
                     filterexpr in [None, ''] and duration is None and
