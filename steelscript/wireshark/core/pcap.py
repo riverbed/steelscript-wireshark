@@ -91,7 +91,6 @@ class PcapFile(object):
                 capinfos = subprocess.check_output(cmd,
                                                    env=popen_env,
                                                    universal_newlines=True)
-                capinfos = capinfos.decode('utf8')
                 hdrs, vals = (capinfos.split('\n')[:2])
                 self._info = dict(zip(hdrs.split(','), vals.split(',')))
 
