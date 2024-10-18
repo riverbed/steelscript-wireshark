@@ -15,7 +15,7 @@ from setuptools import setup, find_packages
 
 setup_args = {
     'name':                'steelscript.wireshark',
-    'version':             '24.2.1',
+    'version':             '24.10.1',
     'author':              'Riverbed Technology',
     'author_email':        'eng-github@riverbed.com',
     'url':                 'http://pythonhosted.org/steelscript',
@@ -40,6 +40,7 @@ http://pythonhosted.org/steelscript/
         'steelscript>=24.2.0',
         'python-dateutil',
         'tzlocal',
+        'pytz'
     ),
 
     'extras_require': None,
@@ -57,7 +58,7 @@ http://pythonhosted.org/steelscript/
         ('share/doc/steelscript/examples/wireshark', glob('examples/*')),
     ),
 
-    'python_requires': '>3.5.0',
+    'python_requires': '>3.9.0',
 
     'classifiers': [
         'Framework :: Django',
