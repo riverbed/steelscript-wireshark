@@ -40,6 +40,7 @@ http://pythonhosted.org/steelscript/
         'steelscript>=24.2.0',
         'python-dateutil',
         'tzlocal',
+        'pytz'
     ),
 
     'extras_require': None,
